@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-labelledby="t3 d3" font-family="Arial, Helvetica, sans-serif">
+  <title id="t3">Penyebab kecelakaan kerja listrik</title>
+  <desc id="d3">Tindakan tidak aman dan kondisi tidak aman bersama-sama dapat menyebabkan kecelakaan kerja seperti sengatan listrik, korsleting, dan kebakaran.</desc>
+  <defs><marker id="ar" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#94a3b8"/></marker></defs>
+  <rect width="720" height="400" rx="18" fill="#1e293b"/>
+  <text x="360" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#f8fafc">Mengapa Kecelakaan Terjadi?</text>
+  <rect x="24" y="62" width="320" height="138" rx="12" fill="#0f172a" stroke="#f59e0b" stroke-width="2"/>
+  <text x="44" y="90" font-size="17" font-weight="700" fill="#fbbf24">Tindakan Tidak Aman</text>
+  <g font-size="14" fill="#e2e8f0"><text x="44" y="120">• Tidak memakai APD</text><text x="44" y="144">• Bekerja saat jaringan bertegangan</text><text x="44" y="168">• Mengabaikan SOP dan rambu</text></g>
+  <rect x="24" y="214" width="320" height="138" rx="12" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/>
+  <text x="44" y="242" font-size="17" font-weight="700" fill="#7dd3fc">Kondisi Tidak Aman</text>
+  <g font-size="14" fill="#e2e8f0"><text x="44" y="272">• Kabel terkelupas, sambungan longgar</text><text x="44" y="296">• Panel terbuka tanpa pengaman</text><text x="44" y="320">• Lantai basah di area kerja</text></g>
+  <path d="M346 131 L412 168" stroke="#94a3b8" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <path d="M346 283 L412 236" stroke="#94a3b8" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <rect x="418" y="128" width="278" height="144" rx="12" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+  <text x="557" y="166" text-anchor="middle" font-size="19" font-weight="700" fill="#fecaca">Kecelakaan Kerja</text>
+  <g font-size="14" fill="#fee2e2" text-anchor="middle"><text x="557" y="196">Sengatan listrik</text><text x="557" y="218">Hubung singkat (korsleting)</text><text x="557" y="240">Kebakaran akibat listrik</text></g>
+  <rect x="24" y="364" width="672" height="26" rx="8" fill="#10b981"/>
+  <text x="360" y="382" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Cegah dengan SOP, APD, dan pemeriksaan kondisi kerja sebelum mulai</text>
+</svg>

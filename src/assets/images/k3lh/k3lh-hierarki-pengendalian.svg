@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" role="img" aria-labelledby="t2 d2" font-family="Arial, Helvetica, sans-serif">
+  <title id="t2">Hierarki pengendalian bahaya listrik</title>
+  <desc id="d2">Lima tingkat pengendalian bahaya dari yang paling efektif (eliminasi) sampai pertahanan terakhir (APD), lengkap dengan contoh pada pekerjaan listrik.</desc>
+  <rect width="720" height="440" rx="18" fill="#1e293b"/>
+  <text x="360" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#f8fafc">Hierarki Pengendalian Bahaya</text>
+  <g font-size="16" font-weight="700" fill="#0f172a" text-anchor="middle">
+    <rect x="30"  y="62"  width="360" height="54" rx="8" fill="#10b981"/><text x="210" y="95">1. Eliminasi</text>
+    <rect x="55"  y="124" width="310" height="54" rx="8" fill="#84cc16"/><text x="210" y="157">2. Substitusi</text>
+    <rect x="80"  y="186" width="260" height="54" rx="8" fill="#facc15"/><text x="210" y="219">3. Rekayasa Teknik</text>
+    <rect x="105" y="248" width="210" height="54" rx="8" fill="#fb923c"/><text x="210" y="281">4. Administratif</text>
+    <rect x="130" y="310" width="160" height="54" rx="8" fill="#ef4444"/><text x="210" y="343" fill="#ffffff">5. APD</text>
+  </g>
+  <g font-size="14" fill="#e2e8f0">
+    <text x="410" y="86">Matikan dan lepas sumber,</text><text x="410" y="105">bekerja tanpa tegangan.</text>
+    <text x="410" y="148">Pakai tegangan lebih rendah</text><text x="410" y="167">atau peralatan lebih aman.</text>
+    <text x="410" y="210">MCB, pembumian (PE), isolasi,</text><text x="410" y="229">penutup panel.</text>
+    <text x="410" y="272">SOP, rambu, LOTO, pelatihan.</text>
+    <text x="410" y="334">Sarung tangan, sepatu safety,</text><text x="410" y="353">kacamata, helm.</text>
+  </g>
+  <path d="M395 72 V354" stroke="#475569" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <text x="360" y="396" text-anchor="middle" font-size="14" fill="#cbd5e1">Semakin ke atas semakin efektif. APD adalah pertahanan terakhir,</text>
+  <text x="360" y="416" text-anchor="middle" font-size="14" fill="#cbd5e1">bukan pengganti tindakan pencegahan lainnya.</text>
+</svg>

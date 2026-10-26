@@ -1,0 +1,217 @@
+// Trouble Shoot Functional Validator - Virtual Lab IPL
+// Memverifikasi apakah gangguan kelistrikan pada skenario telah berhasil diperbaiki
+
+import { evaluateCircuit, detectAllErrors } from './circuitEvaluator.js';
+
+export function validateTroubleshoot(scenarioId, canvasState) {
+  const { components, wires } = canvasState;
+
+  if (!components || components.length === 0) {
+    return { success: false, message: "Kanvas kosong! Silakan periksa rangkaian." };
+  }
+
+  // 1. Proactive error checking - tidak boleh ada fatal error / korsleting / kabel menggantung
+  const blockingErrors = detectAllErrors(canvasState);
+  if (blockingErrors && blockingErrors.length > 0) {
+    return {
+      success: false,
+      message: "Masih ada kesalahan pada rangkaian (seperti hubungan singkat/korsleting, kabel terbuka, atau sambungan yang belum tepat). Periksa kembali jalur instalasi Anda!"
+    };
+  }
+
+  // Backup component states to restore after testing
+  const stateBackup = components.map(c => ({ id: c.id, state: JSON.stringify(c.state || {}) }));
+  function restoreBackup() {
+    components.forEach(comp => {
+      const backup = stateBackup.find(b => b.id === comp.id);
+      if (backup) {
+        comp.state = JSON.parse(backup.state);
+      }
+    });
+  }
+
+  // Helper to ensure all MCBs are closed during functional testing
+  function turnOnMCBs() {
+    components.forEach(c => {
+      if (c.type === 'MCB_1P' || c.type === 'MCB_3P') {
+        c.state = c.state || {};
+        c.state.on = true;
+        c.state.tripped = false;
+      }
+    });
+  }
+
+  try {
+    switch (scenarioId) {
+      case 'ts_01': {
+        // Goal: Lampu Kamar Tidak Menyala (Kabel lepas dari Saklar Tunggal ke Lampu)
+        const lamps = components.filter(c => c.type === 'Lamp');
+        const switches = components.filter(c => c.type === 'SwitchSingle');
+
+        if (lamps.length < 1) return { success: false, message: "Lampu tidak ditemukan di kanvas." };
+        if (switches.length < 1) return { success: false, message: "Saklar Tunggal tidak ditemukan di kanvas." };
+
+        turnOnMCBs();
+
+        // Test 1: Switch OFF
+        switches[0].state = { on: false };
+        let res0 = evaluateCircuit({ components, wires });
+        if (res0.shortCircuit) return { success: false, message: "Korsleting terdeteksi pada rangkaian!" };
+        const lampOff = !res0.components.find(c => c.id === lamps[0].id).state.on;
+
+        // Test 2: Switch ON
+        switches[0].state = { on: true };
+        let res1 = evaluateCircuit({ components, wires });
+        if (res1.shortCircuit) return { success: false, message: "Korsleting terdeteksi saat saklar dinyalakan!" };
+        const lampOn = !!res1.components.find(c => c.id === lamps[0].id).state.on;
+
+        restoreBackup();
+
+        if (lampOn && lampOff) {
+          return {
+            success: true,
+            message: "LULUS! Sambungan kabel ke pin L Lampu telah berhasil diperbaiki. Lampu kamar kini menyala normal saat saklar dinyalakan!"
+          };
+        } else if (!lampOn) {
+          return {
+            success: false,
+            message: "Lampu belum menyala saat saklar di-ON-kan. Pastikan kabel dari output saklar benar-benar terhubung ke pin L Lampu."
+          };
+        } else {
+          return {
+            success: false,
+            message: "Lampu terus menyala tanpa melewati saklar."
+          };
+        }
+      }
+
+      case 'ts_02': {
+        // Goal: Saklar Tangga Tidak Konsisten
+        // Fault: Kabel Lampu tersambung ke L1 Saklar B, bukan ke com Saklar B.
+        // Akibatnya lampu hanya dikendalikan Saklar A, Saklar B tidak berpengaruh sama sekali.
+        // Fix valid: kabel ke com Saklar B → perilaku standar saklar hotel (3-way):
+        //   SW_A=ON, SW_B=ON   → Lampu NYALA (com_A→L1_A→L1_B→com_B→Lamp)
+        //   SW_A=OFF, SW_B=OFF → Lampu NYALA (com_A→L2_A→L2_B→com_B→Lamp)
+        //   SW_A=ON, SW_B=OFF  → Lampu MATI
+        //   SW_A=OFF, SW_B=ON  → Lampu MATI
+        const lamps = components.filter(c => c.type === 'Lamp');
+        const switches = components.filter(c => c.type === 'SwitchWay3');
+
+        if (lamps.length < 1) return { success: false, message: "Lampu tangga tidak ditemukan di kanvas." };
+        if (switches.length < 2) return { success: false, message: "Dibutuhkan minimal 2 Saklar Tukar." };
+
+        turnOnMCBs();
+
+        // Test standard 4 combinations:
+        // Standard hotel switch (travelers L1-L1, L2-L2, lamp on com_B):
+        // SW_A=ON  (com→L1), SW_B=ON  (com→L1) → com_A→L1_A→L1_B→com_B→Lamp → NYALA
+        // SW_A=OFF (com→L2), SW_B=OFF (com→L2) → com_A→L2_A→L2_B→com_B→Lamp → NYALA
+        // SW_A=ON  (com→L1), SW_B=OFF (com→L2) → L1_B not on com_B path → MATI
+        // SW_A=OFF (com→L2), SW_B=ON  (com→L1) → L2_B not on com_B path → MATI
+
+        // 1. Both ON (com→L1)
+        switches[0].state = { on: true };
+        switches[1].state = { on: true };
+        let r11 = evaluateCircuit({ components, wires });
+        const s11 = !!r11.components.find(c => c.id === lamps[0].id).state.on;
+
+        // 2. Both OFF (com→L2)
+        switches[0].state = { on: false };
+        switches[1].state = { on: false };
+        let r00 = evaluateCircuit({ components, wires });
+        const s00 = !!r00.components.find(c => c.id === lamps[0].id).state.on;
+
+        // 3. SW_A ON, SW_B OFF
+        switches[0].state = { on: true };
+        switches[1].state = { on: false };
+        let r10 = evaluateCircuit({ components, wires });
+        const s10 = !!r10.components.find(c => c.id === lamps[0].id).state.on;
+
+        // 4. SW_A OFF, SW_B ON
+        switches[0].state = { on: false };
+        switches[1].state = { on: true };
+        let r01 = evaluateCircuit({ components, wires });
+        const s01 = !!r01.components.find(c => c.id === lamps[0].id).state.on;
+
+        restoreBackup();
+
+        if (s11 && s00 && !s10 && !s01) {
+          return {
+            success: true,
+            message: "LULUS! Kabel menuju Lampu telah terpasang dengan benar pada terminal 'com' Saklar B. Kini kedua saklar tangga bekerja konsisten — masing-masing dapat menyalakan dan mematikan lampu secara independen dari kedua lantai!"
+          };
+        } else if (s11 && s10 && !s00 && !s01) {
+          return {
+            success: false,
+            message: "Lampu masih hanya mengikuti posisi Saklar A dan tidak terpengaruh oleh Saklar B. Kemungkinan kabel menuju Lampu masih tersambung ke terminal L1 Saklar B, bukan ke terminal 'com'-nya."
+          };
+        } else if (!s11 && !s10 && s00 && s01) {
+          return {
+            success: false,
+            message: "Lampu hanya menyala saat Saklar A OFF. Periksa kembali sambungan kabel -- kemungkinan terbalik atau tersambung ke L2 Saklar B."
+          };
+        } else {
+          return {
+            success: false,
+            message: "Pola penyalaan saklar tangga belum sesuai standar. Pastikan kabel menuju Lampu terhubung ke terminal 'com' Saklar B, bukan L1 atau L2."
+          };
+        }
+      }
+
+      case 'ts_03': {
+        // Goal: MCB Selalu Trip (Kabel korsleting jumper pada Lampu 2)
+        const lamps = components.filter(c => c.type === 'Lamp');
+        const switches = components.filter(c => c.type === 'SwitchSingle');
+
+        if (lamps.length < 2) return { success: false, message: "Dibutuhkan minimal 2 Lampu di kanvas." };
+        if (switches.length < 1) return { success: false, message: "Saklar Tunggal tidak ditemukan." };
+
+        turnOnMCBs();
+
+        // Test 1: Switch ON
+        switches[0].state = { on: true };
+        let r1 = evaluateCircuit({ components, wires });
+        if (r1.shortCircuit) {
+          return {
+            success: false,
+            message: "MCB masih trip! Jalur korsleting (hubung singkat) masih ada pada rangkaian."
+          };
+        }
+
+        const l1_on = !!r1.components.find(c => c.id === lamps[0].id).state.on;
+        const l2_on = !!r1.components.find(c => c.id === lamps[1].id).state.on;
+
+        // Test 2: Switch OFF
+        switches[0].state = { on: false };
+        let r0 = evaluateCircuit({ components, wires });
+        const l1_off = !r0.components.find(c => c.id === lamps[0].id).state.on;
+        const l2_off = !r0.components.find(c => c.id === lamps[1].id).state.on;
+
+        restoreBackup();
+
+        if (l1_on && l2_on && l1_off && l2_off) {
+          return {
+            success: true,
+            message: "LULUS! Kabel jumper penyebab korsleting telah dihilangkan. Kedua lampu ruang tamu kini menyala paralel dengan aman tanpa memicu trip pada MCB!"
+          };
+        } else if (!l2_on) {
+          return {
+            success: false,
+            message: "Korsleting teratasi namun Lampu 2 belum menyala. Pastikan jalur Fasa dan Netral ke Lampu 2 tetap tersambung normal."
+          };
+        } else {
+          return {
+            success: false,
+            message: "Kedua lampu belum dapat dikontrol saklar secara normal."
+          };
+        }
+      }
+
+      default:
+        return { success: false, message: "Skenario tidak dikenal." };
+    }
+  } catch (err) {
+    console.error("Troubleshoot validation error:", err);
+    return { success: false, message: "Terjadi kesalahan saat memvalidasi rangkaian." };
+  }
+}

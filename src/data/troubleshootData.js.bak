@@ -1,0 +1,276 @@
+// Data Skenario Trouble Shoot - Virtual Lab IPL
+// Berisi kasus-kasus investigasi kerusakan/gangguan instalasi listrik nyata di lapangan
+
+export const TROUBLESHOOT_SCENARIOS = [
+  {
+    id: "ts_01",
+    title: "Lampu Kamar Tidak Menyala",
+    customerReport: "\"Pak, ini lampu kamar tidur saya kok gak nyala ya? Padahal saklarnya udah saya nyalain. MCB juga gak trip kok, coba deh dicek.\"",
+    initialComponents: [
+      { id: 'ts1_src', type: 'Source_1P', x: 60, y: 200, rotation: 0, state: {} },
+      { id: 'ts1_mcb', type: 'MCB_1P', x: 240, y: 200, rotation: 0, state: { on: true } },
+      { id: 'ts1_sw', type: 'SwitchSingle', x: 420, y: 200, rotation: 0, state: { on: true } },
+      { id: 'ts1_lamp', type: 'Lamp', x: 600, y: 200, rotation: 0, state: {} }
+    ],
+    initialWires: [
+      {
+        id: 'wire_ts1_src_mcb',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts1_src', pinName: 'L', x: 125, y: 255 },
+        to: { type: 'pin', componentId: 'ts1_mcb', pinName: 'in', x: 270, y: 210 },
+        path: [
+          { id: 'wp_ts1_sm1', x: 125, y: 255 },
+          { id: 'wp_ts1_sm2', x: 190, y: 255 },
+          { id: 'wp_ts1_sm3', x: 190, y: 210 },
+          { id: 'wp_ts1_sm4', x: 270, y: 210 }
+        ]
+      },
+      {
+        id: 'wire_ts1_mcb_sw',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts1_mcb', pinName: 'out', x: 270, y: 290 },
+        to: { type: 'pin', componentId: 'ts1_sw', pinName: 'in', x: 450, y: 210 },
+        path: [
+          { id: 'wp_ts1_ms1', x: 270, y: 290 },
+          { id: 'wp_ts1_ms2', x: 350, y: 290 },
+          { id: 'wp_ts1_ms3', x: 350, y: 210 },
+          { id: 'wp_ts1_ms4', x: 450, y: 210 }
+        ]
+      },
+      // KESALAHAN: Ujung kabel menuju Lampu sengaja dibuat tidak snap ke pin L (berhenti di dekatnya sebagai titik lepas)
+      {
+        id: 'wire_ts1_sw_lamp',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts1_sw', pinName: 'out', x: 450, y: 270 },
+        to: { type: 'point', x: 616, y: 240 },
+        path: [
+          { id: 'wp_ts1_sl1', x: 450, y: 270 },
+          { id: 'wp_ts1_sl2', x: 530, y: 270 },
+          { id: 'wp_ts1_sl3', x: 530, y: 240 },
+          { id: 'wp_ts1_sl4', x: 616, y: 240 }
+        ]
+      },
+      {
+        id: 'wire_ts1_lamp_src_n',
+        color: 'blue',
+        from: { type: 'pin', componentId: 'ts1_lamp', pinName: 'N', x: 655, y: 240 },
+        to: { type: 'pin', componentId: 'ts1_src', pinName: 'N', x: 125, y: 285 },
+        path: [
+          { id: 'wp_ts1_ln1', x: 655, y: 240 },
+          { id: 'wp_ts1_ln2', x: 655, y: 350 },
+          { id: 'wp_ts1_ln3', x: 125, y: 350 },
+          { id: 'wp_ts1_ln4', x: 125, y: 285 }
+        ]
+      }
+    ],
+    hints: [
+      "Coba tekan tombol Cek Kesalahan atau Simulasikan dulu -- apakah ada peringatan yang muncul di kanvas?",
+      "Perhatikan kabel yang menghubungkan Saklar Tunggal ke Lampu -- telusuri dari ujung ke ujung, apakah benar-benar sudah tersambung di kedua sisinya?",
+      "Coba klik ujung kabel yang berada paling dekat dengan pin 'L' pada Lampu -- kemungkinan ujung itu menggantung (floating), tidak benar-benar snap ke pin."
+    ],
+    solution: "Kabel dari Saklar Tunggal menuju Lampu ternyata tidak benar-benar tersambung ke pin L Lampu (hanya terlihat dekat secara visual, padahal terputus). Solusinya: hapus kabel yang menggantung tersebut, lalu gambar ulang kabel baru dari pin 'out' Saklar Tunggal ke pin 'L' Lampu sampai muncul indikator snap (bulatan pin berubah warna saat tersambung dengan benar).",
+    faultHighlightIds: ["ts1_sw", "ts1_lamp"]
+  },
+  {
+    id: "ts_02",
+    title: "Saklar Tangga Tidak Konsisten",
+    customerReport: "\"Ini saklar tangga yang baru dipasang aneh deh. Kadang nyala kadang enggak, gak konsisten kalau saya coba matikan dari saklar yang di lantai atas.\"",
+    initialComponents: [
+      { id: 'ts2_src', type: 'Source_1P', x: 60, y: 220, rotation: 0, state: {} },
+      { id: 'ts2_mcb', type: 'MCB_1P', x: 220, y: 220, rotation: 0, state: { on: true } },
+      { id: 'ts2_swA', type: 'SwitchWay3', x: 380, y: 140, rotation: 0, state: { on: false } },
+      { id: 'ts2_swB', type: 'SwitchWay3', x: 380, y: 300, rotation: 0, state: { on: false } },
+      { id: 'ts2_lamp', type: 'Lamp', x: 560, y: 220, rotation: 0, state: {} }
+    ],
+    initialWires: [
+      {
+        id: 'wire_ts2_src_mcb',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts2_src', pinName: 'L', x: 125, y: 275 },
+        to: { type: 'pin', componentId: 'ts2_mcb', pinName: 'in', x: 250, y: 230 },
+        path: [
+          { id: 'wp_ts2_sm1', x: 125, y: 275 },
+          { id: 'wp_ts2_sm2', x: 185, y: 275 },
+          { id: 'wp_ts2_sm3', x: 185, y: 230 },
+          { id: 'wp_ts2_sm4', x: 250, y: 230 }
+        ]
+      },
+      {
+        id: 'wire_ts2_mcb_swA',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts2_mcb', pinName: 'out', x: 250, y: 310 },
+        to: { type: 'pin', componentId: 'ts2_swA', pinName: 'com', x: 415, y: 210 },
+        path: [
+          { id: 'wp_ts2_ms1', x: 250, y: 310 },
+          { id: 'wp_ts2_ms2', x: 310, y: 310 },
+          { id: 'wp_ts2_ms3', x: 310, y: 210 },
+          { id: 'wp_ts2_ms4', x: 415, y: 210 }
+        ]
+      },
+      // Traveler LURUS/BENAR: L1 Saklar A ke L1 Saklar B
+      {
+        id: 'wire_ts2_traveler1',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts2_swA', pinName: 'L1', x: 400, y: 150 },
+        to: { type: 'pin', componentId: 'ts2_swB', pinName: 'L1', x: 400, y: 310 },
+        path: [
+          { id: 'wp_ts2_t1_1', x: 400, y: 150 },
+          { id: 'wp_ts2_t1_2', x: 350, y: 150 },
+          { id: 'wp_ts2_t1_3', x: 350, y: 310 },
+          { id: 'wp_ts2_t1_4', x: 400, y: 310 }
+        ]
+      },
+      // Traveler LURUS/BENAR: L2 Saklar A ke L2 Saklar B
+      {
+        id: 'wire_ts2_traveler2',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts2_swA', pinName: 'L2', x: 430, y: 150 },
+        to: { type: 'pin', componentId: 'ts2_swB', pinName: 'L2', x: 430, y: 310 },
+        path: [
+          { id: 'wp_ts2_t2_1', x: 430, y: 150 },
+          { id: 'wp_ts2_t2_2', x: 460, y: 150 },
+          { id: 'wp_ts2_t2_3', x: 460, y: 310 },
+          { id: 'wp_ts2_t2_4', x: 430, y: 310 }
+        ]
+      },
+      // KESALAHAN: Kabel dari Lampu tersambung ke terminal L1 Saklar B,
+      // SEHARUSNYA ke terminal 'com' Saklar B. Terminal 'com' Saklar B dibiarkan kosong.
+      {
+        id: 'wire_ts2_swB_lamp',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts2_swB', pinName: 'L1', x: 400, y: 310 },
+        to: { type: 'pin', componentId: 'ts2_lamp', pinName: 'L', x: 585, y: 260 },
+        path: [
+          { id: 'wp_ts2_bl1', x: 400, y: 310 },
+          { id: 'wp_ts2_bl2', x: 500, y: 310 },
+          { id: 'wp_ts2_bl3', x: 500, y: 260 },
+          { id: 'wp_ts2_bl4', x: 585, y: 260 }
+        ]
+      },
+      {
+        id: 'wire_ts2_lamp_src_n',
+        color: 'blue',
+        from: { type: 'pin', componentId: 'ts2_lamp', pinName: 'N', x: 615, y: 260 },
+        to: { type: 'pin', componentId: 'ts2_src', pinName: 'N', x: 125, y: 305 },
+        path: [
+          { id: 'wp_ts2_ln1', x: 615, y: 260 },
+          { id: 'wp_ts2_ln2', x: 615, y: 440 },
+          { id: 'wp_ts2_ln3', x: 125, y: 440 },
+          { id: 'wp_ts2_ln4', x: 125, y: 305 }
+        ]
+      }
+    ],
+    hints: [
+      "Coba nyalakan MCB dan toggle kedua saklar secara bergantian sambil disimulasikan -- catat pola ON/OFF lampu di tiap kombinasi.",
+      "Perhatikan: apakah Saklar B (yang jauh dari sumber) benar-benar memengaruhi nyala/matinya lampu, atau lampu cuma mengikuti Saklar A saja?",
+      "Periksa kabel yang menuju ke Lampu -- pastikan kabel itu benar-benar tersambung ke terminal 'com' Saklar B, BUKAN ke terminal L1 atau L2-nya."
+    ],
+    solution: "Kabel menuju Lampu ternyata salah tersambung ke terminal L1 Saklar B, padahal seharusnya ke terminal 'com' Saklar B. Akibatnya, Lampu hanya mengikuti posisi Saklar A dan sama sekali tidak terpengaruh oleh Saklar B. Solusinya: pindahkan kabel tersebut supaya benar-benar tersambung ke terminal 'com' Saklar B.",
+    faultHighlightIds: ["ts2_swB", "ts2_lamp"]
+  },
+  {
+    id: "ts_03",
+    title: "MCB Selalu Trip Saat Dinyalakan",
+    customerReport: "\"Pak, ini kok pas dinyalain MCB-nya langsung jeglek (trip) ya? Padahal cuma mau nyalain 2 lampu di ruang tamu.\"",
+    initialComponents: [
+      { id: 'ts3_src', type: 'Source_1P', x: 60, y: 220, rotation: 0, state: {} },
+      { id: 'ts3_mcb', type: 'MCB_1P', x: 220, y: 220, rotation: 0, state: { on: true } },
+      { id: 'ts3_sw', type: 'SwitchSingle', x: 380, y: 220, rotation: 0, state: { on: true } },
+      { id: 'ts3_lamp1', type: 'Lamp', x: 560, y: 140, rotation: 0, state: {} },
+      { id: 'ts3_lamp2', type: 'Lamp', x: 560, y: 300, rotation: 0, state: {} }
+    ],
+    initialWires: [
+      {
+        id: 'wire_ts3_src_mcb',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts3_src', pinName: 'L', x: 125, y: 275 },
+        to: { type: 'pin', componentId: 'ts3_mcb', pinName: 'in', x: 250, y: 230 },
+        path: [
+          { id: 'wp_ts3_sm1', x: 125, y: 275 },
+          { id: 'wp_ts3_sm2', x: 185, y: 275 },
+          { id: 'wp_ts3_sm3', x: 185, y: 230 },
+          { id: 'wp_ts3_sm4', x: 250, y: 230 }
+        ]
+      },
+      {
+        id: 'wire_ts3_mcb_sw',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts3_mcb', pinName: 'out', x: 250, y: 310 },
+        to: { type: 'pin', componentId: 'ts3_sw', pinName: 'in', x: 410, y: 230 },
+        path: [
+          { id: 'wp_ts3_ms1', x: 250, y: 310 },
+          { id: 'wp_ts3_ms2', x: 330, y: 310 },
+          { id: 'wp_ts3_ms3', x: 330, y: 230 },
+          { id: 'wp_ts3_ms4', x: 410, y: 230 }
+        ]
+      },
+      {
+        id: 'wire_ts3_sw_branch',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts3_sw', pinName: 'out', x: 410, y: 290 },
+        to: { type: 'pin', componentId: 'ts3_lamp1', pinName: 'L', x: 585, y: 180 },
+        path: [
+          { id: 'wp_ts3_sb1', x: 410, y: 290 },
+          { id: 'wp_ts3_sb2', x: 480, y: 290 },
+          { id: 'wp_ts3_branch_fasa', x: 480, y: 180 },
+          { id: 'wp_ts3_sb3', x: 585, y: 180 }
+        ]
+      },
+      {
+        id: 'wire_ts3_branch_lamp2',
+        color: 'red',
+        from: { type: 'wire', wireId: 'wire_ts3_sw_branch', waypointId: 'wp_ts3_branch_fasa', x: 480, y: 180 },
+        to: { type: 'pin', componentId: 'ts3_lamp2', pinName: 'L', x: 585, y: 340 },
+        path: [
+          { id: 'wp_ts3_b2_1', x: 480, y: 180 },
+          { id: 'wp_ts3_b2_2', x: 480, y: 340 },
+          { id: 'wp_ts3_b2_3', x: 585, y: 340 }
+        ]
+      },
+      {
+        id: 'wire_ts3_netral_main',
+        color: 'blue',
+        from: { type: 'pin', componentId: 'ts3_lamp1', pinName: 'N', x: 615, y: 180 },
+        to: { type: 'pin', componentId: 'ts3_src', pinName: 'N', x: 125, y: 305 },
+        path: [
+          { id: 'wp_ts3_nm1', x: 615, y: 180 },
+          { id: 'wp_ts3_branch_netral', x: 660, y: 180 },
+          { id: 'wp_ts3_nm2', x: 660, y: 400 },
+          { id: 'wp_ts3_nm3', x: 125, y: 400 },
+          { id: 'wp_ts3_nm4', x: 125, y: 305 }
+        ]
+      },
+      {
+        id: 'wire_ts3_lamp2_netral',
+        color: 'blue',
+        from: { type: 'pin', componentId: 'ts3_lamp2', pinName: 'N', x: 615, y: 340 },
+        to: { type: 'wire', wireId: 'wire_ts3_netral_main', waypointId: 'wp_ts3_branch_netral', x: 660, y: 180 },
+        path: [
+          { id: 'wp_ts3_l2n1', x: 615, y: 340 },
+          { id: 'wp_ts3_l2n2', x: 660, y: 340 },
+          { id: 'wp_ts3_l2n3', x: 660, y: 180 }
+        ]
+      },
+      // KESALAHAN: Kabel korsleting langsung menyambungkan pin L dan pin N pada Lampu 2
+      {
+        id: 'wire_ts3_short',
+        color: 'red',
+        from: { type: 'pin', componentId: 'ts3_lamp2', pinName: 'L', x: 585, y: 340 },
+        to: { type: 'pin', componentId: 'ts3_lamp2', pinName: 'N', x: 615, y: 340 },
+        path: [
+          { id: 'wp_ts3_sc1', x: 585, y: 340 },
+          { id: 'wp_ts3_sc2', x: 585, y: 375 },
+          { id: 'wp_ts3_sc3', x: 615, y: 375 },
+          { id: 'wp_ts3_sc4', x: 615, y: 340 }
+        ]
+      }
+    ],
+    hints: [
+      "Coba tekan Simulasikan -- MCB akan terlihat trip (posisi tuas berubah) disertai bunyi khas korsleting. Ini pertanda ada jalur Fasa yang langsung terhubung ke Netral tanpa melewati beban di suatu tempat pada rangkaian.",
+      "Telusuri satu per satu kabel dari titik percabangan menuju Lampu 1 dan Lampu 2 -- periksa apakah ada kabel tambahan yang mencurigakan di sekitar salah satu lampu, yang tidak seharusnya ada.",
+      "Periksa area sekitar Lampu 2 -- kemungkinan ada 1 kabel pendek ekstra yang menyambungkan langsung antara pin L dan pin N pada lampu itu, tanpa melalui saklar/beban dengan benar."
+    ],
+    solution: "Terdapat kabel ekstra yang secara langsung menyambungkan pin L dan pin N pada Lampu 2, menciptakan jalur pintas Fasa-Netral tanpa melewati beban (korsleting murni). Solusinya: hapus kabel ekstra tersebut, sehingga Lampu 2 hanya tersambung normal lewat jalur Fasa (dari percabangan Saklar) dan Netral (dari percabangan Sumber) seperti Lampu 1.",
+    faultHighlightIds: ["ts3_lamp2"]
+  }
+];
