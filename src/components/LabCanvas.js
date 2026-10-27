@@ -212,6 +212,77 @@ const isEmulatedMouse = () => Date.now() - lastTouchAt < 700;
 let _rafPending = false;
 let _canvasWrapper = null; // persistent reference to avoid repeated DOM queries
 
+export function fitToView(wrapper = _canvasWrapper) {
+  const container = wrapper || _canvasWrapper || document.getElementById('canvas-container');
+  if (!container) return;
+
+  const comps = state.canvas.components || [];
+  const wires = state.canvas.wires || [];
+
+  if (comps.length === 0 && wires.length === 0) {
+    state.canvas.zoom = 1;
+    state.canvas.pan = { x: 0, y: 0 };
+    applyViewportTransform();
+    return;
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  comps.forEach(c => {
+    const info = COMPONENT_TYPES[c.type] || { width: 80, height: 80 };
+    minX = Math.min(minX, c.x);
+    minY = Math.min(minY, c.y);
+    maxX = Math.max(maxX, c.x + info.width);
+    maxY = Math.max(maxY, c.y + info.height);
+  });
+
+  wires.forEach(w => {
+    (w.path || []).forEach(p => {
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+    });
+  });
+
+  if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+    state.canvas.zoom = 1;
+    state.canvas.pan = { x: 0, y: 0 };
+    applyViewportTransform();
+    return;
+  }
+
+  const padding = 36;
+  const bbWidth = (maxX - minX) + padding * 2;
+  const bbHeight = (maxY - minY) + padding * 2;
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  const rect = container.getBoundingClientRect();
+  const viewW = rect.width || window.innerWidth;
+  const viewH = rect.height || (window.innerHeight - 80);
+
+  if (viewW <= 0 || viewH <= 0) {
+    state.canvas.zoom = 1;
+    state.canvas.pan = { x: 0, y: 0 };
+    applyViewportTransform();
+    return;
+  }
+
+  const scaleX = viewW / bbWidth;
+  const scaleY = viewH / bbHeight;
+  let fitZoom = Math.min(scaleX, scaleY);
+  fitZoom = Math.max(0.4, Math.min(1.0, fitZoom));
+  fitZoom = parseFloat(fitZoom.toFixed(2));
+
+  const panX = Math.round(viewW / 2 - centerX * fitZoom);
+  const panY = Math.round(viewH / 2 - centerY * fitZoom);
+
+  state.canvas.zoom = fitZoom;
+  state.canvas.pan = { x: panX, y: panY };
+  applyViewportTransform();
+}
+
 function scheduleRaf(fn) {
   if (_rafPending) return;
   _rafPending = true;
@@ -2084,6 +2155,25 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
   window.addEventListener('touchend', handleEnd, { signal });
   window.addEventListener('touchcancel', handleEnd, { signal });
   window.addEventListener('blur', handleEnd, { signal });
+
+  // Orientation change & resize handler: auto fitToView when rotating to landscape
+  let _lastOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+  const handleWindowResizeOrOrient = () => {
+    const curOrientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+    const orientChanged = curOrientation !== _lastOrientation;
+    _lastOrientation = curOrientation;
+
+    if (orientChanged && curOrientation === 'landscape') {
+      setTimeout(() => {
+        fitToView(wrapper);
+      }, 100);
+    }
+  };
+
+  window.addEventListener('resize', handleWindowResizeOrOrient, { signal });
+  window.addEventListener('orientationchange', () => {
+    setTimeout(handleWindowResizeOrOrient, 150);
+  }, { signal });
 
   // --- Mouse wheel zoom toward cursor ---
   svg.addEventListener('wheel', (e) => {

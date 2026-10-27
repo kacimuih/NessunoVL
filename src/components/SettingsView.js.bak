@@ -1,0 +1,397 @@
+import { updateState, state, navigate, applyBgmSettings, store } from '../main.js';
+import { playUIClick } from '../utils/audioFeedback.js';
+import { showConfirmDialog, showAlertDialog } from '../utils/appDialog.js';
+
+export function renderSettingsView() {
+  const container = document.getElementById('app');
+
+  container.innerHTML = `
+    <nav class="navbar">
+      <div class="nav-brand">
+        <button class="btn-nav-back" id="btn-back-home" title="Kembali ke Beranda" aria-label="Kembali ke Beranda">
+          <i class="bi bi-arrow-left"></i><span class="btn-back-text"> Kembali</span>
+        </button>
+        <span class="nav-title">Pengaturan & Tutorial</span>
+      </div>
+      <div class="nav-actions">
+        <span class="nav-meta">Konfigurasi Lab</span>
+      </div>
+    </nav>
+
+    <div class="settings-container">
+      <!-- Section 1: Panduan / Tutorial -->
+      <section class="settings-card">
+        <h3><i class="bi bi-book"></i> Tutorial Penggunaan Lab Perakitan</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Sub-judul Kelompok A -->
+          <div style="padding: 4px 0 2px 2px; border-bottom: 1px solid var(--border-color); margin-bottom: -4px;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-color); margin: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="bi bi-tools"></i> Kelompok A — Dasar Merakit
+            </h4>
+          </div>
+
+          <!-- 1. Menempatkan Komponen -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">1. Menempatkan Komponen</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              <strong>Desktop:</strong> Seret (<em>drag</em>) komponen dari palet sebelah kiri lalu letakkan (<em>drop</em>) di area kanvas kerja.<br>
+              <strong>HP/Tablet:</strong> Ketuk (<em>tap</em>) komponen di palet kiri, lalu ketuk di area kanvas kerja untuk menaruhnya secara presisi.<br>
+              <strong>Buka/Tutup Palet:</strong> Di layar sentuh/HP, ketuk tombol palet (ikon <strong>+</strong> / <strong>x</strong> di pojok kiri bawah) untuk membuka atau menutup laci palet komponen.
+            </p>
+          </div>
+
+          <!-- 2. Menghubungkan Kabel -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">2. Menghubungkan Kabel</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Ketuk titik pin terminal komponen (fasa, netral, atau arde), tarik garis kabel, lalu ketuk pin tujuan untuk menyambung.<br>
+              <strong>Titik Belok (Waypoint):</strong> Ketuk area kanvas kosong saat sedang menarik kabel untuk menambah titik belokan.<br>
+              <strong>Percabangan:</strong> Ketuk ujung kabel baru ke bagian tengah kabel lain yang sudah ada. Titik sambungan bulat (<em>junction dot</em>) akan otomatis terbentuk.<br>
+              <strong>Batal & Hapus Titik:</strong> Tekan tombol <strong>Batal</strong> (atau tombol <strong>Esc</strong> pada keyboard) untuk membatalkan penarikan kabel. Gunakan tombol <strong>Hapus Titik</strong> untuk menghapus titik belok terakhir.
+            </p>
+          </div>
+
+          <!-- 3. Warna Kabel (Standar PUIL) -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">3. Warna Kabel (Standar PUIL)</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Warna isolasi kabel otomatis mengikuti standar PUIL (Persyaratan Umum Instalasi Listrik) berdasarkan terminal sambungannya:<br>
+              • <strong>Merah / Kuning / Hitam:</strong> Kabel Fasa (R, S, T).<br>
+              • <strong>Biru:</strong> Kabel Netral (N).<br>
+              • <strong>Kuning-Hijau / Hijau:</strong> Kabel Pengaman Pembumian (Ground / PE).
+            </p>
+          </div>
+
+          <!-- 4. Memilih, Memutar & Menghapus -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">4. Memilih, Memutar & Menghapus</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Ketuk komponen atau kabel di kanvas untuk <strong>memilih</strong> (ditandai bingkai seleksi bercahaya). Menu aksi kecil akan melayang di atas objek terpilih:<br>
+              • <strong>Putar:</strong> Memutar arah posisi komponen sebesar 90°.<br>
+              • <strong>Rapikan Kabel / Rapikan Otomatis:</strong> Mengubah kabel bebas menjadi siku-siku 90° atau mengembalikan rute kabel otomatis. Anda juga dapat menyeret pegangan di tengah garis kabel untuk menggeser belokan.<br>
+              • <strong>Sembunyikan / Tampilkan Label:</strong> Khusus Panel PHB 3-Fasa, untuk menampilkan atau menyembunyikan teks label grup beban.<br>
+              • <strong>Ganti Sekring Baru:</strong> Khusus komponen Sekring (Fuse) yang kawat leburnya sudah putus.<br>
+              • <strong>Hapus:</strong> Menghapus objek terpilih. Di desktop, tombol <strong>Delete</strong> atau <strong>Backspace</strong> pada keyboard juga dapat langsung menghapus item yang sedang dipilih.
+            </p>
+          </div>
+
+          <!-- Sub-judul Kelompok B -->
+          <div style="padding: 10px 0 2px 2px; border-bottom: 1px solid var(--border-color); margin-bottom: -4px;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-color); margin: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="bi bi-sliders"></i> Kelompok B — Kontrol Kanvas
+            </h4>
+          </div>
+
+          <!-- 5. Zoom, Grid & Snap -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">5. Zoom, Grid & Snap</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Gunakan bilah tombol melayang di pojok kanan bawah kanvas:<br>
+              • <strong>Zoom In (+) & Zoom Out (-):</strong> Memperbesar atau memperkecil tampilan (bisa juga mencubit layar sentuh dengan 2 jari / roda putar mouse).<br>
+              • <strong>Zoom Fit (FIT):</strong> Menyesuaikan skala dan memusatkan seluruh rangkaian secara otomatis agar pas di layar.<br>
+              • <strong>Tampilkan Grid:</strong> Menampilkan atau menyembunyikan garis-garis kotak bantu kanvas.<br>
+              • <strong>Tempel ke Grid (Snap):</strong> Mengunci posisi komponen dan titik kabel agar selalu menempel rapi pada kelipatan grid.<br>
+              • <strong>Kabel Siku-siku:</strong> Beralih antara mode penarikan kabel siku 90° (ortogonal) dan mode kabel bebas.
+            </p>
+          </div>
+
+          <!-- 6. Undo, Redo & Reset -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">6. Undo, Redo & Reset</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              • <strong>Undo & Redo:</strong> Gunakan tombol <strong>Undo</strong> dan <strong>Redo</strong> di bilah navigasi atas untuk membatalkan atau mengulang langkah perakitan terakhir.<br>
+              • <strong>Reset Sirkuit:</strong> Gunakan tombol <strong>Reset</strong> (ikon tempat sampah merah) di bilah atas untuk mengosongkan seluruh komponen dan kabel kanvas kembali bersih (sumber listrik tetap dipertahankan).
+            </p>
+          </div>
+
+          <!-- 7. Mode Tampilan: Wiring & Realistis -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">7. Mode Tampilan: Wiring & Realistis</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Beralih gaya visual kanvas kapan saja melalui tombol di bilah navigasi atas:<br>
+              • <strong>Wiring:</strong> Menampilkan rangkaian menggunakan simbol skematik diagram pengawatan standar teknik elektro (PUIL).<br>
+              • <strong>Realistis:</strong> Menampilkan komponen dalam wujud foto fisik nyata 3D beresolusi tinggi untuk melatih pengenalan peralatan di bengkel kerja listrik.
+            </p>
+          </div>
+
+          <!-- Sub-judul Kelompok C -->
+          <div style="padding: 10px 0 2px 2px; border-bottom: 1px solid var(--border-color); margin-bottom: -4px;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-color); margin: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="bi bi-lightning-charge"></i> Kelompok C — Simulasi, Pengecekan & Menu Lain
+            </h4>
+          </div>
+
+          <!-- 8. Simulasikan -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">8. Simulasikan</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Ketuk tombol <strong>Simulasikan</strong> di bilah atas untuk mengalirkan arus listrik ke rangkaian:<br>
+              • Tombol akan berubah menjadi <strong>Stop</strong> saat simulasi berjalan. Anda dapat mengetuk sakelar atau tuas MCB untuk menyalakan/mematikan lampu secara interaktif.<br>
+              • <strong>Aliran Arus:</strong> Kabel fasa (merah/kuning/hitam), netral (biru), dan arde (hijau) tetap mempertahankan warna aslinya dan berkedip dengan animasi pulsa saat teraliri arus listrik.<br>
+              • <strong>Pencegahan & Korsleting:</strong> Jika terdeteksi kesalahan fatal sebelum simulasi, simulasi akan <strong>diblokir</strong> dan lokasi kesalahan disebutkan. Jika terjadi hubung singkat saat pengujian, MCB akan langsung <strong>TRIP</strong> otomatis ke posisi OFF (atau kawat sekring putus permanen) disertai dialog edukatif.
+            </p>
+          </div>
+
+          <!-- 9. Cek Kesalahan Rangkaian -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">9. Cek Kesalahan Rangkaian</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Di mode Merakit Bebas, tombol <strong>Cek Kesalahan</strong> di bilah atas menampilkan daftar kesalahan atau catatan tanpa penilaian kelulusan.<br>
+              • Ketuk kartu peringatan (atau tombol <strong>Lihat</strong>) untuk otomatis memfokuskan kamera kanvas dan menyorot letak komponen yang bermasalah.<br>
+              • Di layar HP, kartu peringatan dapat diminimalkan menjadi pil kecil agar pandangan ke kanvas tetap leluasa.
+            </p>
+          </div>
+
+          <!-- 10. Jobsheet -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">10. Jobsheet (Latihan Terstruktur)</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Pelajari instalasi penerangan listrik secara terstruktur:<br>
+              • Baca <strong>Instruksi Praktik</strong> melalui tombol panah di navbar (atau tab <strong>Instruksi / Kanvas</strong> pada layar sentuh HP).<br>
+              • Rakit rangkaian sesuai petunjuk, lalu tekan tombol <strong>Pengecekan Rangkaian</strong>.<br>
+              • Jika lulus, modul ditandai <strong>LULUS</strong> dan progres tersimpan permanen. Jika belum, dialog evaluasi akan menjelaskan poin kesalahan dan lokasinya secara rinci.
+            </p>
+          </div>
+
+          <!-- 11. Trouble Shoot -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">11. Trouble Shoot (Pelacakan Kerusakan)</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Asah kemampuan pelacakan gangguan instalasi di lapangan:<br>
+              • Baca laporan keluhan pelanggan, lalu telusuri dan perbaiki sambungan sirkuit yang rusak di kanvas. Indikator kesalahan otomatis sengaja disembunyikan di mode ini agar siswa mencari masalah secara mandiri.<br>
+              • Jika mengalami kebuntuan, gunakan tombol <strong>Buka Petunjuk</strong> untuk petunjuk bertingkat, atau tombol <strong>Lihat Solusi</strong> untuk mengungkap letak kerusakan.<br>
+              • Tekan tombol <strong>Uji Solusi Perbaikan</strong> untuk memvalidasi perbaikan Anda.
+            </p>
+          </div>
+
+          <!-- 12. Materi -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">12. Buku Materi IPL</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Modul teori interaktif yang terbagi dalam 4 kategori besar: <strong>K3LH Kelistrikan</strong>, <strong>Alat dan Bahan Kerja IPL</strong>, <strong>Komponen Listrik (PUIL)</strong>, dan <strong>Sistem 3 Fasa</strong>.<br>
+              • Setiap kartu materi memiliki tombol <strong>Baca Selengkapnya</strong> untuk melihat teori mendalam serta anatomi bagian alat/komponen interaktif.<br>
+              • Kartu komponen juga menyediakan tombol <strong>Coba di Simulator</strong> untuk langsung membuka contoh sirkuit terkait ke dalam kanvas perakitan.
+            </p>
+          </div>
+
+          <!-- 13. Suara -->
+          <div style="background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-color);">
+            <h4 style="font-weight: 600; margin-bottom: 6px;">13. Efek Suara & Musik Latar</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.45;">
+              Virtual Lab dilengkapi efek suara responsif untuk klik saklar, sambungan kabel, alarm korsleting, dan nada kelulusan, serta musik instrumental latar (BGM). Tingkat volume suara efek (SFX) serta sakelar nyala/mati dan volume musik latar dapat Anda sesuaikan pada seksi <strong>Pengaturan Dasar</strong> di bawah ini.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Pengaturan Aplikasi -->
+      <section class="settings-card">
+        <h3><i class="bi bi-gear-fill"></i> Pengaturan Dasar</h3>
+
+        <!-- Tema visual -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Tema Aplikasi</h4>
+            <p>Pilih tampilan tema gelap atau terang.</p>
+          </div>
+          <div class="setting-control">
+            <select id="select-theme">
+              <option value="dark" ${state.theme === 'dark' ? 'selected' : ''}>Gelap (Rekomendasi)</option>
+              <option value="light" ${state.theme === 'light' ? 'selected' : ''}>Terang</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ukuran Teks -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Ukuran Teks Deskripsi</h4>
+            <p>Sesuaikan kenyamanan pembacaan materi.</p>
+          </div>
+          <div class="setting-control">
+            <select id="select-font-size">
+              <option value="small" ${state.fontSize === 'small' ? 'selected' : ''}>Kecil</option>
+              <option value="medium" ${state.fontSize === 'medium' ? 'selected' : ''}>Sedang</option>
+              <option value="large" ${state.fontSize === 'large' ? 'selected' : ''}>Besar</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Volume Suara SFX -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Volume Efek Suara (SFX)</h4>
+            <p>Besar kecilnya suara klik saklar, kabel, dan alarm peringatan sirkuit.</p>
+          </div>
+          <div class="setting-control" style="display: flex; align-items: center; gap: 10px;">
+            <input type="range" id="input-volume" min="0" max="100" value="${state.volume}" style="width: 120px;">
+            <span id="volume-label" style="font-size: 0.9rem; font-weight: 600; width: 36px; text-align: right;">${state.volume}%</span>
+          </div>
+        </div>
+
+        <!-- Toggle Musik Latar (BGM) -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Musik Latar (BGM)</h4>
+            <p>Aktifkan atau matikan musik instrumen latar belakang aplikasi.</p>
+          </div>
+          <div class="setting-control">
+            <button id="btn-toggle-bgm" class="btn-context" style="padding: 6px 14px; font-weight: 600; border: 1px solid var(--border-color); background: ${state.bgmEnabled ? 'var(--accent-color)' : 'var(--bg-tertiary)'}; color: ${state.bgmEnabled ? '#fff' : 'var(--text-secondary)'};">
+              <i class="bi ${state.bgmEnabled ? 'bi-volume-up-fill' : 'bi-volume-mute-fill'}"></i> ${state.bgmEnabled ? 'Aktif' : 'Mati'}
+            </button>
+          </div>
+        </div>
+
+        <!-- Slider Volume BGM -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Volume Musik Latar</h4>
+            <p>Atur tingkat kekerasan musik latar belakang.</p>
+          </div>
+          <div class="setting-control" style="display: flex; align-items: center; gap: 10px;">
+            <input type="range" id="input-bgm-volume" min="0" max="100" value="${state.bgmVolume}" style="width: 120px;" ${!state.bgmEnabled ? 'disabled' : ''}>
+            <span id="bgm-volume-label" style="font-size: 0.9rem; font-weight: 600; width: 36px; text-align: right; opacity: ${state.bgmEnabled ? '1' : '0.5'};">${state.bgmVolume}%</span>
+          </div>
+        </div>
+
+        <!-- Reset Progress -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Reset Progres Praktik</h4>
+            <p>Hapus semua status penyelesaian Jobsheet (kembali ke awal).</p>
+          </div>
+          <div class="setting-control">
+            <button class="btn-context delete" id="btn-reset-progress" style="border: 1px solid var(--color-error); padding: 8px 16px;">
+              Reset Progres
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+
+  // Attach event listeners
+  document.getElementById('btn-back-home').addEventListener('click', () => {
+    playUIClick();
+    navigate('home');
+  });
+
+  // Theme change
+  const selectTheme = document.getElementById('select-theme');
+  selectTheme.addEventListener('change', (e) => {
+    playUIClick();
+    const val = e.target.value;
+    updateState({ theme: val });
+    
+    // Apply theme
+    if (val === 'light') {
+      document.body.classList.add('theme-light');
+      document.body.classList.remove('theme-dark');
+    } else {
+      document.body.classList.remove('theme-light');
+      document.body.classList.add('theme-dark');
+    }
+    store.set('theme', val);
+  });
+
+  // Font size change
+  const selectFontSize = document.getElementById('select-font-size');
+  selectFontSize.addEventListener('change', (e) => {
+    playUIClick();
+    const val = e.target.value;
+    updateState({ fontSize: val });
+    store.set('fontSize', val);
+  });
+
+  // Volume change
+  const inputVolume = document.getElementById('input-volume');
+  const volumeLabel = document.getElementById('volume-label');
+  inputVolume.addEventListener('input', (e) => {
+    const val = e.target.value;
+    volumeLabel.textContent = `${val}%`;
+  });
+
+  inputVolume.addEventListener('change', (e) => {
+    const val = e.target.value;
+    updateState({ volume: val });
+    store.set('volume', val);
+
+    // Play a brief preview sound using Web Audio API
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); // 600 Hz beep
+      gainNode.gain.setValueAtTime((val / 100) * 0.1, audioCtx.currentTime); // scale volume safely
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1); // play for 100ms
+    } catch (err) {
+      console.warn("AudioContext failed or is not supported: ", err);
+    }
+  });
+
+  // Toggle BGM
+  const btnToggleBgm = document.getElementById('btn-toggle-bgm');
+  const inputBgmVolume = document.getElementById('input-bgm-volume');
+  const bgmVolumeLabel = document.getElementById('bgm-volume-label');
+  if (btnToggleBgm) {
+    btnToggleBgm.addEventListener('click', () => {
+      playUIClick();
+      state.bgmEnabled = !state.bgmEnabled;
+      store.set('bgmEnabled', state.bgmEnabled.toString());
+      applyBgmSettings();
+
+      // Update UI elements
+      btnToggleBgm.style.background = state.bgmEnabled ? 'var(--accent-color)' : 'var(--bg-tertiary)';
+      btnToggleBgm.style.color = state.bgmEnabled ? '#fff' : 'var(--text-secondary)';
+      btnToggleBgm.innerHTML = `<i class="bi ${state.bgmEnabled ? 'bi-volume-up-fill' : 'bi-volume-mute-fill'}"></i> ${state.bgmEnabled ? 'Aktif' : 'Mati'}`;
+      if (inputBgmVolume) inputBgmVolume.disabled = !state.bgmEnabled;
+      if (bgmVolumeLabel) bgmVolumeLabel.style.opacity = state.bgmEnabled ? '1' : '0.5';
+    });
+  }
+
+  // Volume BGM change (slider - no repeated click sound)
+  if (inputBgmVolume) {
+    inputBgmVolume.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      state.bgmVolume = val;
+      if (bgmVolumeLabel) bgmVolumeLabel.textContent = `${val}%`;
+      applyBgmSettings();
+    });
+
+    inputBgmVolume.addEventListener('change', (e) => {
+      const val = parseInt(e.target.value, 10);
+      state.bgmVolume = val;
+      store.set('bgmVolume', val.toString());
+      applyBgmSettings();
+    });
+  }
+
+  // Reset progress
+  const btnReset = document.getElementById('btn-reset-progress');
+  btnReset.addEventListener('click', async () => {
+    playUIClick();
+    const ok = await showConfirmDialog({
+      title: 'Reset Seluruh Progres?',
+      message: 'Seluruh progres Jobsheet akan dihapus. Tindakan ini tidak dapat dibatalkan.',
+      confirmText: 'Ya, Reset Progres',
+      cancelText: 'Batal',
+      variant: 'warning'
+    });
+    if (ok) {
+      updateState({ jobsheetProgress: {} });
+      store.set('jobsheetProgress', JSON.stringify({}));
+      await showAlertDialog({
+        variant: 'success',
+        title: 'Progres Direset',
+        message: 'Progres penyelesaian latihan berhasil diriset.'
+      });
+    }
+  });
+}

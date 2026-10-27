@@ -6,7 +6,7 @@ import { validateJobsheet } from '../utils/jobsheetValidator.js';
 import { detectAllErrors, diagnoseCircuit } from '../utils/circuitEvaluator.js';
 import { playBeep, playSuccess, playError, playWarning, playShortCircuit, playUIClick } from '../utils/audioFeedback.js';
 import { showConfirmDialog } from '../utils/appDialog.js';
-import { renderLabCanvas, getAvailablePaletteItems, applyViewportTransform } from './LabCanvas.js';
+import { renderLabCanvas, getAvailablePaletteItems, applyViewportTransform, fitToView } from './LabCanvas.js';
 import { getPaletteThumbnail } from '../data/realisticAssets.js';
 
 
@@ -32,8 +32,9 @@ export function renderJobsheetView() {
 
   if (!isFreeMode && state.activeJobsheetId) {
     if (!_jobsheetTabMemory.has(state.activeJobsheetId)) {
-      _jobsheetTabMemory.set(state.activeJobsheetId, false);
-      state.instructionCollapsed = false;
+      const isLandscapeMobile = window.matchMedia('(max-width: 768px) and (orientation: landscape) and (max-height: 520px)').matches;
+      _jobsheetTabMemory.set(state.activeJobsheetId, isLandscapeMobile);
+      state.instructionCollapsed = isLandscapeMobile;
     } else {
       state.instructionCollapsed = !!_jobsheetTabMemory.get(state.activeJobsheetId);
     }
@@ -300,21 +301,7 @@ export function renderJobsheetView() {
   const ensureCanvasVisible = () => {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer || !state.canvas.components.length) return;
-    const rect = canvasContainer.getBoundingClientRect();
-    const visibleW = rect.width || window.innerWidth;
-    const visibleH = rect.height || (window.innerHeight - 113);
-    const zoom = state.canvas.zoom || 1;
-    const pan = state.canvas.pan || { x: 0, y: 0 };
-    const hasVisibleComp = state.canvas.components.some(c => {
-      const sx = c.x * zoom + pan.x;
-      const sy = c.y * zoom + pan.y;
-      return sx >= -100 && sx <= visibleW && sy >= -100 && sy <= visibleH;
-    });
-    if (!hasVisibleComp) {
-      state.canvas.zoom = 1;
-      state.canvas.pan = { x: 0, y: 0 };
-      renderLabCanvas(canvasContainer);
-    }
+    fitToView(canvasContainer);
   };
 
   const btnToggleInstruction = document.getElementById('btn-toggle-instruction');
@@ -588,8 +575,7 @@ export function renderJobsheetView() {
   }
 
   // ─── Validation Result Dialog Modal Helper ──────────────────────────────────
-  // ─── Validation Result Dialog Modal Helper ──────────────────────────────────
-  function showValidationResultDialog({ success, variant, title, message, errorAlerts = [], jobsheetTitle = '', confirmText, onFix, onNext }) {
+  function showValidationResultDialog({ success, variant, title, message, errorAlerts = [], jobsheetTitle = '', confirmText, onFix }) {
     // Remove any existing dialog first (avoid duplicate popups)
     const existing = document.getElementById('validation-result-overlay');
     if (existing) {
@@ -647,11 +633,6 @@ export function renderJobsheetView() {
             <button id="vr-btn-close" class="vr-btn-secondary">
               <i class="bi bi-x-lg"></i> ${confirmText || 'Tutup'}
             </button>
-            ${onNext ? `
-              <button id="vr-btn-next" class="vr-btn-primary-success">
-                <i class="bi bi-arrow-right-circle-fill"></i> Lanjut ke Jobsheet Berikutnya
-              </button>
-            ` : ''}
           </div>
         </div>
       `;
@@ -784,19 +765,9 @@ export function renderJobsheetView() {
       });
     }
 
-    // Next Jobsheet button (Lulus)
-    const btnNext = overlay.querySelector('#vr-btn-next');
-    if (btnNext) {
-      btnNext.addEventListener('click', () => {
-        playUIClick();
-        closeDialog();
-        if (onNext) onNext();
-      });
-    }
-
     // Auto focus primary button
     setTimeout(() => {
-      const primaryBtn = btnNext || btnFix || btnClose;
+      const primaryBtn = btnFix || btnClose;
       if (primaryBtn) primaryBtn.focus();
     }, 50);
   }
@@ -898,12 +869,6 @@ export function renderJobsheetView() {
       // Re-render canvas alerts, visual markers, AND validation status box
       updateState({ canvas: state.canvas });
 
-      // Determine next jobsheet if available
-      const currentIndex = jobsheetData.findIndex(j => j.id === state.activeJobsheetId);
-      const nextJs = (currentIndex !== -1 && currentIndex < jobsheetData.length - 1)
-        ? jobsheetData[currentIndex + 1]
-        : null;
-
       // Show Validation Result Modal Popup
       showValidationResultDialog({
         success: passed,
@@ -912,10 +877,7 @@ export function renderJobsheetView() {
         jobsheetTitle: js ? js.title : '',
         onFix: () => {
           // close popup, canvas tetap menampilkan highlight error
-        },
-        onNext: nextJs ? () => {
-          navigate('jobsheet', { jobsheetId: nextJs.id });
-        } : null
+        }
       });
     });
   }
@@ -1004,9 +966,7 @@ export function renderJobsheetView() {
     applyViewportTransform();
   });
   document.getElementById('btn-zoom-fit').addEventListener('click', () => {
-    state.canvas.zoom = 1;
-    state.canvas.pan = { x: 0, y: 0 };
-    applyViewportTransform();
+    fitToView();
   });
 
   const btnToggleGrid = document.getElementById('btn-toggle-grid');

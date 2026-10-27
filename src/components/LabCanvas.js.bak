@@ -6,7 +6,7 @@ import { updateState, state, pushHistory } from '../main.js';
 import { evaluateCircuit, detectAllErrors, getComponentLabel, getWireLabel } from '../utils/circuitEvaluator.js';
 import { playSwitchClick, playConnect, playShortCircuit, playError, playWarning, playCriticalAlertSiren, playUIClick } from '../utils/audioFeedback.js';
 import { showShortCircuitDialog, showConfirmDialog, showToast } from '../utils/appDialog.js';
-import { compBox, pinAbs, pinExit, routeOrthogonal, roundedPath, snap, normalizePath, segmentsOfOtherNets } from '../utils/wireRouting.js';
+import { compBox, pinAbs, pinExit, routeOrthogonal, roundedPath, snap as gridSnap, normalizePath, segmentsOfOtherNets } from '../utils/wireRouting.js';
 import { moveSegment, insertJog, anchorsFromPath } from '../utils/wireManual.js';
 import { computeLanes, displayPath } from '../utils/wireLanes.js';
 import { placeMenu } from '../utils/menuPlacement.js';
@@ -452,7 +452,7 @@ export function renderLabCanvas(wrapper) {
     <div id="drawing-overlay" class="canvas-drawing-overlay" style="display: ${drawingWire ? 'flex' : 'none'};">
       <span><i class="bi bi-pencil-square" style="margin-right: 6px;"></i>Sedang menggambar kabel...</span>
       <div class="drawing-overlay-actions">
-        <button type="button" id="btn-undo-waypoint" class="btn-wire-action" style="display: ${drawingWire && drawingWire.path && drawingWire.path.length > 1 ? 'inline-flex' : 'none'};">
+        <button type="button" id="btn-undo-waypoint" class="btn-wire-action" style="display: ${drawingWire && ((state.canvas.wireMode !== 'free' && drawingWire.from && drawingWire.from.type === 'pin') ? (drawingWire.anchors && drawingWire.anchors.length > 0) : (drawingWire.path && drawingWire.path.length > 1)) ? 'inline-flex' : 'none'};">
           <i class="bi bi-arrow-counterclockwise"></i> Hapus Titik
         </button>
         <button type="button" id="btn-cancel-wire" class="btn-wire-action">
@@ -1328,96 +1328,99 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
 
   // Helper: finalise an in-progress wire when a valid snap target is confirmed.
   // Handles the special case where the snap target lies on the MIDDLE of an existing
-  // wire segment (snap.insertAfterIndex defined) — in that case we first splice a new
+  // wire segment (targetSnap.insertAfterIndex defined) — in that case we first splice a new
   // waypoint into the target wire so the junction is explicit.
-  function completeDrawingWire(snap) {
-    if (!drawingWire) return;
-    if (!isDifferentEndpoint(drawingWire.from, snap)) return;
+  function completeDrawingWire(targetSnap) {
+    try {
+      if (!drawingWire) return;
+      if (!isDifferentEndpoint(drawingWire.from, targetSnap)) return;
 
-    let resolvedSnap = snap;
+      let resolvedSnap = targetSnap;
 
-    // Mid-segment snap: insert a new waypoint into the target wire first
-    if (snap.type === 'wire' && snap.insertAfterIndex !== undefined) {
-      const targetWire = state.canvas.wires.find(w => w.id === snap.wireId);
-      if (targetWire) {
-        const insertIdx = snap.insertAfterIndex + 1;
-        // Assign a permanent stable ID to the new waypoint — index may shift later due to
-        // further splices, but the ID will never change.
-        const newWpId = generateWpId();
-        targetWire.path.splice(insertIdx, 0, { id: newWpId, x: snap.x, y: snap.y });
+      // Mid-segment snap: insert a new waypoint into the target wire first
+      if (targetSnap.type === 'wire' && targetSnap.insertAfterIndex !== undefined) {
+        const targetWire = state.canvas.wires.find(w => w.id === targetSnap.wireId);
+        if (targetWire) {
+          const insertIdx = targetSnap.insertAfterIndex + 1;
+          // Assign a permanent stable ID to the new waypoint — index may shift later due to
+          // further splices, but the ID will never change.
+          const newWpId = generateWpId();
+          targetWire.path.splice(insertIdx, 0, { id: newWpId, x: targetSnap.x, y: targetSnap.y });
 
-        // Resolve as a stable waypointId snap (not index-based)
-        resolvedSnap = {
-          type: 'wire',
-          wireId: snap.wireId,
-          waypointId: newWpId,
-          x: snap.x,
-          y: snap.y
-        };
-      }
-    }
-
-    const isOrtho = state.canvas.wireMode !== 'free' && drawingWire.from.type === 'pin' && resolvedSnap.type === 'pin';
-    let wirePath = [];
-    let anchors = [];
-
-    if (isOrtho) {
-      const compA = state.canvas.components.find(c => c.id === drawingWire.from.componentId);
-      const pinDefA = compA && COMPONENT_TYPES[compA.type]?.pins.find(p => p.name === drawingWire.from.pinName);
-      const compB = state.canvas.components.find(c => c.id === resolvedSnap.componentId);
-      const pinDefB = compB && COMPONENT_TYPES[compB.type]?.pins.find(p => p.name === resolvedSnap.pinName);
-
-      if (compA && pinDefA && compB && pinDefB) {
-        const pinA = pinAbs(compA, pinDefA);
-        const exitA = pinExit(compA, pinDefA);
-        const pinB = pinAbs(compB, pinDefB);
-        const exitB = pinExit(compB, pinDefB);
-        anchors = (drawingWire.anchors || []).map(a => ({ x: snap(a.x), y: snap(a.y) }));
-        const boxes = state.canvas.components.map(c => compBox(c, 6));
-
-        const fromKey = `${drawingWire.from.componentId}.${drawingWire.from.pinName}`;
-        const toKey = `${resolvedSnap.componentId}.${resolvedSnap.pinName}`;
-        const others = segmentsOfOtherNets(state.canvas.wires, fromKey, toKey);
-        const routedPts = routeOrthogonal(pinA, exitA, anchors, pinB, exitB, boxes, { others });
-        wirePath = routedPts.map(pt => ({ id: generateWpId(), x: pt.x, y: pt.y }));
-        if (wirePath.length > 0) {
-          wirePath[0].x = pinA.x;
-          wirePath[0].y = pinA.y;
-          wirePath[wirePath.length - 1].x = pinB.x;
-          wirePath[wirePath.length - 1].y = pinB.y;
+          // Resolve as a stable waypointId snap (not index-based)
+          resolvedSnap = {
+            type: 'wire',
+            wireId: targetSnap.wireId,
+            waypointId: newWpId,
+            x: targetSnap.x,
+            y: targetSnap.y
+          };
         }
       }
+
+      const isOrtho = state.canvas.wireMode !== 'free' && drawingWire.from.type === 'pin' && resolvedSnap.type === 'pin';
+      let wirePath = [];
+      let anchors = [];
+
+      if (isOrtho) {
+        const compA = state.canvas.components.find(c => c.id === drawingWire.from.componentId);
+        const pinDefA = compA && COMPONENT_TYPES[compA.type]?.pins.find(p => p.name === drawingWire.from.pinName);
+        const compB = state.canvas.components.find(c => c.id === resolvedSnap.componentId);
+        const pinDefB = compB && COMPONENT_TYPES[compB.type]?.pins.find(p => p.name === resolvedSnap.pinName);
+
+        if (compA && pinDefA && compB && pinDefB) {
+          const pinA = pinAbs(compA, pinDefA);
+          const exitA = pinExit(compA, pinDefA);
+          const pinB = pinAbs(compB, pinDefB);
+          const exitB = pinExit(compB, pinDefB);
+          anchors = (drawingWire.anchors || []).map(a => ({ x: gridSnap(a.x), y: gridSnap(a.y) }));
+          const boxes = state.canvas.components.map(c => compBox(c, 6));
+
+          const fromKey = `${drawingWire.from.componentId}.${drawingWire.from.pinName}`;
+          const toKey = `${resolvedSnap.componentId}.${resolvedSnap.pinName}`;
+          const others = segmentsOfOtherNets(state.canvas.wires, fromKey, toKey);
+          const routedPts = routeOrthogonal(pinA, exitA, anchors, pinB, exitB, boxes, { others });
+          wirePath = routedPts.map(pt => ({ id: generateWpId(), x: pt.x, y: pt.y }));
+          if (wirePath.length > 0) {
+            wirePath[0].x = pinA.x;
+            wirePath[0].y = pinA.y;
+            wirePath[wirePath.length - 1].x = pinB.x;
+            wirePath[wirePath.length - 1].y = pinB.y;
+          }
+        }
+      }
+
+      if (wirePath.length === 0) {
+        wirePath = [...drawingWire.path, { x: resolvedSnap.x, y: resolvedSnap.y }].map(pt => ({
+          id: pt.id || generateWpId(),
+          x: pt.x,
+          y: pt.y
+        }));
+      }
+
+      const newWire = {
+        id: 'wire_' + Date.now() + '_' + Math.floor(Math.random() * 100),
+        color: getWireColorForPin(drawingWire.from, resolvedSnap),
+        path: wirePath,
+        from: drawingWire.from,
+        to: resolvedSnap,
+        mode: isOrtho ? 'ortho' : 'free'
+      };
+      if (isOrtho) {
+        newWire.anchors = anchors;
+      }
+
+      state.canvas.wires.push(newWire);
+      drawingWire = null;
+      state.canvas.alerts = [];
+      state.canvas.blockingErrors = [];
+      playConnect();
+      pushHistory();
+      updateState({ canvas: state.canvas });
+    } catch (err) {
+      console.error('Error completing wire:', err);
+      showToast('Kabel gagal tersambung. Coba lagi atau tekan Batal.');
     }
-
-    if (wirePath.length === 0) {
-      wirePath = [...drawingWire.path, { x: resolvedSnap.x, y: resolvedSnap.y }].map(pt => ({
-        id: pt.id || generateWpId(),
-        x: pt.x,
-        y: pt.y
-      }));
-    }
-
-    const newWire = {
-      id: 'wire_' + Date.now() + '_' + Math.floor(Math.random() * 100),
-      color: getWireColorForPin(drawingWire.from, resolvedSnap),
-      path: wirePath,
-      from: drawingWire.from,
-      to: resolvedSnap,
-      mode: isOrtho ? 'ortho' : 'free'
-    };
-    if (isOrtho) {
-      newWire.anchors = anchors;
-    }
-
-    state.canvas.wires.push(newWire);
-    drawingWire = null;
-    state.canvas.alerts = [];
-    state.canvas.blockingErrors = [];
-    playConnect();
-    pushHistory();
-    updateState({ canvas: state.canvas });
-
-
   }
 
   let pinchStartDist = 0;
@@ -1451,18 +1454,18 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
       e.stopPropagation();
       if (state.canvas.isSimulating) return; // disable editing during simulation
       
-      const snap = findSnapTarget(coords, isTouch);
-      if (snap) {
+      const snapTarget = findSnapTarget(coords, isTouch);
+      if (snapTarget) {
         if (drawingWire) {
           // Already drawing — complete wire to this snap target
-          completeDrawingWire(snap);
+          completeDrawingWire(snapTarget);
         } else {
           // Start a new wire from this pin
           drawingWire = {
-            from: snap,
-            path: [{ x: snap.x, y: snap.y }],
+            from: snapTarget,
+            path: [{ x: snapTarget.x, y: snapTarget.y }],
             anchors: [],
-            tempEnd: { x: snap.x, y: snap.y },
+            tempEnd: { x: snapTarget.x, y: snapTarget.y },
             snapTarget: null,
             justStarted: true
           };
@@ -1517,9 +1520,9 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
       e.stopPropagation();
       if (state.canvas.isSimulating) return;
       if (drawingWire) {
-        const snap = findSnapTarget(coords, isTouch);
-        if (snap && isDifferentEndpoint(drawingWire.from, snap)) {
-          completeDrawingWire(snap);
+        const snapTarget = findSnapTarget(coords, isTouch);
+        if (snapTarget && isDifferentEndpoint(drawingWire.from, snapTarget)) {
+          completeDrawingWire(snapTarget);
         } else if (isTouch) {
           drawingWire.tempEnd = coords;
           drawingWire.snapTarget = null;
@@ -1561,9 +1564,9 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
       }
 
       if (drawingWire) {
-        const snap = findSnapTarget(coords, isTouch);
-        if (snap && isDifferentEndpoint(drawingWire.from, snap)) {
-          completeDrawingWire(snap);
+        const snapTarget = findSnapTarget(coords, isTouch);
+        if (snapTarget && isDifferentEndpoint(drawingWire.from, snapTarget)) {
+          completeDrawingWire(snapTarget);
         } else if (isTouch) {
           drawingWire.tempEnd = coords;
           drawingWire.snapTarget = null;
@@ -1595,9 +1598,9 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
       if (drawingWire) {
         // We're actively drawing — treat click on wire body as an attempt to connect here.
         // findSnapTarget Phase 3 will find the nearest mid-segment projection point.
-        const snap = findSnapTarget(coords, isTouch);
-        if (snap && isDifferentEndpoint(drawingWire.from, snap)) {
-          completeDrawingWire(snap);
+        const snapTarget = findSnapTarget(coords, isTouch);
+        if (snapTarget && isDifferentEndpoint(drawingWire.from, snapTarget)) {
+          completeDrawingWire(snapTarget);
         } else if (isTouch) {
           drawingWire.tempEnd = coords;
           drawingWire.snapTarget = null;
@@ -1643,15 +1646,15 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
         }
 
         // Desktop mouse:
-        const snap = findSnapTarget(coords, false);
-        if (snap && isDifferentEndpoint(drawingWire.from, snap)) {
+        const snapTarget = findSnapTarget(coords, false);
+        if (snapTarget && isDifferentEndpoint(drawingWire.from, snapTarget)) {
           // Complete wire — completeDrawingWire handles mid-segment insertion too
-          completeDrawingWire(snap);
+          completeDrawingWire(snapTarget);
         } else {
           // No snap nearby — add a plain waypoint belokan to the active path
           const snapGrid = state.canvas.snapToGrid !== false;
-          const wpX = snapGrid ? snap(coords.x) : Math.round(coords.x);
-          const wpY = snapGrid ? snap(coords.y) : Math.round(coords.y);
+          const wpX = snapGrid ? gridSnap(coords.x) : Math.round(coords.x);
+          const wpY = snapGrid ? gridSnap(coords.y) : Math.round(coords.y);
           if (state.canvas.wireMode !== 'free' && drawingWire.from && drawingWire.from.type === 'pin') {
             if (!drawingWire.anchors) drawingWire.anchors = [];
             const lastA = drawingWire.anchors[drawingWire.anchors.length - 1];
@@ -1734,8 +1737,8 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
       const wire = state.canvas.wires.find(w => w.id === wireId);
       if (wire) {
         const snapGrid = state.canvas.snapToGrid !== false;
-        let targetX = snapGrid ? snap(coords.x) : Math.round(coords.x);
-        let targetY = snapGrid ? snap(coords.y) : Math.round(coords.y);
+        let targetX = snapGrid ? gridSnap(coords.x) : Math.round(coords.x);
+        let targetY = snapGrid ? gridSnap(coords.y) : Math.round(coords.y);
 
         // Alignment guides for waypoint against other targets
         const zoom = state.canvas.zoom || 1;
@@ -1797,15 +1800,15 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
         }
 
         if (anchorIdx !== null && anchorIdx !== undefined && wire.mode === 'ortho' && wire.anchors && wire.anchors[anchorIdx]) {
-          wire.anchors[anchorIdx] = { x: snap(targetX), y: snap(targetY) };
+          wire.anchors[anchorIdx] = { x: gridSnap(targetX), y: gridSnap(targetY) };
           recomputeOrthoWirePath(wire);
           scheduleRaf(() => {
             _applyWirePath(wireId);
             refreshWireDisplays();
             const handle = _canvasWrapper?.querySelector(`.waypoint-handle[data-wire-id="${wireId}"][data-anchor-idx="${anchorIdx}"]`);
             if (handle) {
-              handle.setAttribute('cx', snap(targetX));
-              handle.setAttribute('cy', snap(targetY));
+              handle.setAttribute('cx', gridSnap(targetX));
+              handle.setAttribute('cy', gridSnap(targetY));
             }
           });
         } else {
@@ -1844,13 +1847,13 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
 
     // CASE A: Drawing wire preview — direct DOM, no full re-render
     if (drawingWire) {
-      const snap = findSnapTarget(coords, isMoveTouch);
-      if (snap) {
-        drawingWire.tempEnd = { x: snap.x, y: snap.y };
-        drawingWire.snapTarget = snap;
+      const snapTarget = findSnapTarget(coords, isMoveTouch);
+      if (snapTarget) {
+        drawingWire.tempEnd = { x: snapTarget.x, y: snapTarget.y };
+        drawingWire.snapTarget = snapTarget;
         // Update snap ring position directly
         const ring = _canvasWrapper && _canvasWrapper.querySelector('#snap-highlight');
-        if (ring) { ring.setAttribute('cx', snap.x); ring.setAttribute('cy', snap.y); ring.style.display = 'block'; }
+        if (ring) { ring.setAttribute('cx', snapTarget.x); ring.setAttribute('cy', snapTarget.y); ring.style.display = 'block'; }
       } else {
         drawingWire.tempEnd = coords;
         drawingWire.snapTarget = null;
@@ -1995,6 +1998,7 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
       const { wireId, currentPath } = activeSegData;
       const wire = state.canvas.wires.find(w => w.id === wireId);
       if (wire) {
+
         const normCurrent = normalizePath(currentPath);
         const isSame = (
           wire.path.length === normCurrent.length &&
@@ -2019,13 +2023,13 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
     if (currentPendingTap) {
       if (!currentPendingTap.moved) {
         if (drawingWire) {
-          const snap = findSnapTarget(currentPendingTap.coords, true);
-          if (snap && isDifferentEndpoint(drawingWire.from, snap)) {
-            completeDrawingWire(snap);
+          const snapTarget = findSnapTarget(currentPendingTap.coords, true);
+          if (snapTarget && isDifferentEndpoint(drawingWire.from, snapTarget)) {
+            completeDrawingWire(snapTarget);
           } else {
             const snapGrid = state.canvas.snapToGrid !== false;
-            const wpX = snapGrid ? snap(currentPendingTap.coords.x) : Math.round(currentPendingTap.coords.x);
-            const wpY = snapGrid ? snap(currentPendingTap.coords.y) : Math.round(currentPendingTap.coords.y);
+            const wpX = snapGrid ? gridSnap(currentPendingTap.coords.x) : Math.round(currentPendingTap.coords.x);
+            const wpY = snapGrid ? gridSnap(currentPendingTap.coords.y) : Math.round(currentPendingTap.coords.y);
             if (state.canvas.wireMode !== 'free' && drawingWire.from && drawingWire.from.type === 'pin') {
               if (!drawingWire.anchors) drawingWire.anchors = [];
               const lastA = drawingWire.anchors[drawingWire.anchors.length - 1];
@@ -2335,7 +2339,7 @@ function bindCanvasEvents(wrapper, signal = _winAC?.signal) {
         playUIClick();
         wire.mode = 'ortho';
         const intermediatePts = wire.path.slice(1, -1);
-        wire.anchors = intermediatePts.map(p => ({ x: snap(p.x), y: snap(p.y) }));
+        wire.anchors = intermediatePts.map(p => ({ x: gridSnap(p.x), y: gridSnap(p.y) }));
         recomputeOrthoWirePath(wire);
         pushHistory();
         updateState({ canvas: state.canvas });

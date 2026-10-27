@@ -1538,6 +1538,184 @@ body.theme-light .canvas-toast {
   border-radius: var(--radius-sm);
 }
 
+/* ========================================================
+   Tutorial Cards & Illustrations (.tut-*)
+   ======================================================== */
+.tut-card {
+  background-color: var(--bg-tertiary);
+  padding: 18px;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--accent-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.tut-card:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+body.theme-light .tut-card:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.tut-card-title {
+  font-weight: 700;
+  font-size: 1.02rem;
+  margin: 0;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tut-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .tut-card-body {
+    display: grid;
+    grid-template-columns: minmax(220px, 310px) 1fr;
+    gap: 20px;
+    align-items: center;
+  }
+}
+
+.tut-illustration {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15);
+  min-height: 110px;
+}
+
+.tut-illustration svg {
+  display: block;
+  width: 100%;
+  max-width: 310px;
+  height: auto;
+}
+
+.tut-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.tut-text p {
+  margin: 0 0 8px 0;
+}
+.tut-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Button & Tool Chips inside tutorial text */
+.tut-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  vertical-align: middle;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.tut-chip i {
+  color: var(--accent-color);
+  font-size: 0.85rem;
+}
+
+.tut-chip.danger {
+  border-color: rgba(239, 68, 68, 0.5);
+  color: var(--color-error);
+}
+.tut-chip.danger i {
+  color: var(--color-error);
+}
+
+.tut-chip.success {
+  border-color: rgba(16, 185, 129, 0.5);
+  color: var(--color-success);
+}
+.tut-chip.success i {
+  color: var(--color-success);
+}
+
+.tut-chip.accent {
+  background-color: rgba(245, 158, 11, 0.15);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* Comparison Box (Step 7: Schematic vs Realistic) */
+.tut-compare-box {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  width: 100%;
+  max-width: 310px;
+  gap: 10px;
+}
+
+.tut-compare-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px 8px 6px;
+  gap: 6px;
+  text-align: center;
+}
+
+.tut-compare-item img {
+  max-width: 68px;
+  max-height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+
+.tut-compare-item svg {
+  max-width: 68px;
+  max-height: 68px;
+}
+
+.tut-compare-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tut-compare-vs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
 /* Animations */
 @keyframes wirePulse {
   to {
@@ -1816,7 +1994,12 @@ body.theme-light .canvas-toast {
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     z-index: 960;
+    width: auto;
+    height: auto;
+    min-width: 0;
     min-height: 48px;
+    white-space: nowrap;
+    overflow: visible;
     padding: 0 20px;
     border-radius: 999px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
@@ -5609,4 +5792,108 @@ body.theme-light .canvas-toast {
 }
 .detail-content table { display: block; overflow-x: auto; max-width: 100%; }
 .detail-content pre, .detail-content code { overflow-x: auto; max-width: 100%; }
+
+/* HP landscape: prioritaskan ruang kanvas */
+@media (max-width: 768px) and (orientation: landscape) and (max-height: 520px) {
+  :root { --nav-height: 44px; }
+
+  .navbar {
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+  .nav-actions .btn-toolbar,
+  .nav-actions .btn-view-mode,
+  .nav-brand .btn-nav-back {
+    min-height: 34px;
+    min-width: 34px;
+  }
+
+  /* tab Instruksi/Kanvas tidak dipakai; instruksi dibuka lewat tombol di navbar */
+  .mobile-tabs { display: none !important; }
+  #btn-toggle-instruction,
+  #btn-toggle-ts-instruction { display: inline-flex !important; }
+
+  .jobsheet-workspace {
+    margin-top: var(--nav-height);
+    height: calc(100vh - var(--nav-height));
+    height: calc(100dvh - var(--nav-height));
+  }
+  .jobsheet-workspace.is-free-mode { margin-top: var(--nav-height); }
+
+  /* instruksi = panel samping kiri di atas kanvas, bukan menutupi seluruh layar */
+  .jobsheet-instruction-panel {
+    right: auto;
+    left: 0;
+    width: min(46%, 360px);
+    border-right: 1px solid var(--border-color);
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.4);
+    overflow-y: auto;
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .jobsheet-workspace.instruction-collapsed .jobsheet-instruction-panel {
+    transform: translateX(-100%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    padding: 0;
+  }
+
+  /* kontrol melayang lebih kecil dan tidak terpotong */
+  .zoom-controls-floating {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    right: max(10px, env(safe-area-inset-right));
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(3, 36px);
+    gap: 4px;
+  }
+  .zoom-controls-floating button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 0.85rem;
+  }
+  .drawer-toggle {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    left: max(10px, env(safe-area-inset-left));
+  }
+  #btn-toggle-sim,
+  #btn-ts-toggle-sim {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    min-height: 40px;
+  }
+  #btn-check-free,
+  #btn-validate,
+  #btn-ts-validate {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    left: calc(50% + 74px);
+  }
+
+  body:not(.palette-open):not(:has(#palette-drawer.open)):has(.jobsheet-workspace) #btn-toggle-sim,
+  body:not(.palette-open):not(:has(#palette-drawer.open)):has(.jobsheet-workspace) #btn-ts-toggle-sim {
+    display: inline-flex !important;
+  }
+  body:not(.palette-open):not(:has(#palette-drawer.open)):has(.jobsheet-workspace) #btn-check-free,
+  body:not(.palette-open):not(:has(#palette-drawer.open)):has(.jobsheet-workspace) #btn-validate,
+  body:not(.palette-open):not(:has(#palette-drawer.open)):has(.jobsheet-workspace) #btn-ts-validate {
+    display: flex !important;
+  }
+}
+
+/* Tablet/HP landscape lebar (769–950 px): cukup kecilkan navbar */
+@media (min-width: 769px) and (max-width: 950px) and (orientation: landscape) and (max-height: 520px) {
+  :root { --nav-height: 48px; }
+}
+
 
