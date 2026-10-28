@@ -52,7 +52,7 @@ export function renderComponentDetailPage(detailId) {
   const targetId = detailId || state.activeComponentDetailId;
   const item = findGridItemDetail(targetId);
   if (!item) {
-    navigate('materi');
+    navigate('materi', { restoreScroll: true });
     return;
   }
 
@@ -156,7 +156,7 @@ export function renderComponentDetailPage(detailId) {
 
   const handleBack = () => {
     playUIClick();
-    navigate('materi');
+    navigate('materi', { restoreScroll: true });
   };
 
   const btnNavBack = document.getElementById('btn-nav-back-materi');

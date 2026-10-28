@@ -71,6 +71,9 @@ export const state = {
   bgmEnabled: store.get('bgmEnabled', 'true') !== 'false', // default: true (nyala)
   bgmVolume: parseInt(store.get('bgmVolume', '40'), 10) || 40,
   
+  // Last opened item ID (for scroll fallback when returning to list/parent)
+  lastOpenedItemId: null,
+
   // Materi State
   activeMateriId: 'k3lh',
   activeComponentDetailId: null,
@@ -137,6 +140,10 @@ export function updateState(updater) {
 
 // Router to switch views
 export function navigate(view, extras = {}) {
+  if (extras.restoreScroll) {
+    _pendingRestoreScroll = true;
+  }
+
   // Save settings or progress before navigating if needed
   saveProgress();
 
@@ -372,11 +379,137 @@ function renderViewInternal() {
   }
 }
 
+// --- Scroll Position Management ---
+export const scrollPositions = new Map();
+let _pendingRestoreScroll = false;
+
+const SCROLL_CONTAINERS = [
+  '.materi-content',
+  '.materi-sidebar',
+  '.materi-container',
+  '.component-detail-page',
+  '.jobsheet-sidebar',
+  '.jobsheet-selection-page',
+  '.home-container',
+  '.settings-container'
+];
+
+export function clearSavedScroll(viewKey) {
+  if (viewKey) {
+    scrollPositions.delete(viewKey);
+  }
+}
+
+function captureScrollPosition(viewKey) {
+  if (!viewKey) return;
+  const winY = window.scrollY || window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+  const containers = {};
+  SCROLL_CONTAINERS.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el && el.scrollTop > 0) {
+      containers[sel] = el.scrollTop;
+    }
+  });
+  scrollPositions.set(viewKey, {
+    window: winY,
+    containers
+  });
+}
+
+function isBackNavigation(prevKey, nextKey) {
+  if (!prevKey || !nextKey) return false;
+  const [prevView, prevDetailId, prevJsId, prevTsId] = prevKey.split('|');
+  const [nextView, nextDetailId, nextJsId, nextTsId] = nextKey.split('|');
+
+  // Detail komponen -> Materi
+  if (prevView === 'component_detail' && nextView === 'materi') return true;
+
+  // Workspace Jobsheet -> Daftar Jobsheet
+  if (prevView === 'jobsheet' && prevJsId && nextView === 'jobsheet' && !nextJsId) return true;
+
+  // Workspace Troubleshoot -> Daftar Troubleshoot
+  if (prevView === 'troubleshoot' && prevTsId && nextView === 'troubleshoot' && !nextTsId) return true;
+
+  // Sub-halaman manapun -> Home (kecuali splash -> home)
+  if (nextView === 'home' && prevView !== 'home' && prevView !== 'splash') return true;
+
+  return false;
+}
+
+function resetScroll() {
+  window.scrollTo(0, 0);
+  if (document.documentElement) document.documentElement.scrollTop = 0;
+  if (document.body) document.body.scrollTop = 0;
+  SCROLL_CONTAINERS.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => { el.scrollTop = 0; });
+  });
+}
+
+function applyScrollPosition(savedPos, targetKey) {
+  const restore = () => {
+    if (savedPos) {
+      if (savedPos.window !== undefined) {
+        window.scrollTo(0, savedPos.window);
+        if (document.documentElement) document.documentElement.scrollTop = savedPos.window;
+        if (document.body) document.body.scrollTop = savedPos.window;
+      }
+      if (savedPos.containers) {
+        Object.entries(savedPos.containers).forEach(([sel, top]) => {
+          const el = document.querySelector(sel);
+          if (el) el.scrollTop = top;
+        });
+      }
+    }
+
+    // Fallback: periksa visibilitas kartu terakhir yang dibuka
+    if (state.lastOpenedItemId) {
+      const id = state.lastOpenedItemId;
+      const card = document.getElementById(`card-${id}`) ||
+                   document.querySelector(`[data-detail-id="${id}"]`) ||
+                   document.querySelector(`[data-id="${id}"]`) ||
+                   document.getElementById(id);
+      if (card) {
+        const rect = card.getBoundingClientRect();
+        const winH = window.innerHeight || document.documentElement.clientHeight;
+        const inView = rect.top >= 0 && rect.bottom <= winH;
+        if (!inView) {
+          card.scrollIntoView({ block: 'center', behavior: 'auto' });
+        }
+      }
+    }
+  };
+
+  // 1. Sinkron segera setelah DOM dirender
+  restore();
+
+  // 2. Double rAF agar layout browser tuntas
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      restore();
+    });
+  });
+
+  // 3. Timeout pelengkap (150ms) untuk mengantisipasi gambar atau widget dinamis
+  setTimeout(() => {
+    restore();
+    state.lastOpenedItemId = null;
+  }, 150);
+}
+
 let _lastViewKey = null;
 
 export function renderView() {
   const key = [state.currentView, state.activeComponentDetailId || '', state.activeJobsheetId || '', state.activeTroubleshootId || ''].join('|');
   const viewChanged = key !== _lastViewKey;
+  const oldKey = _lastViewKey;
+
+  if (viewChanged && oldKey) {
+    captureScrollPosition(oldKey);
+  }
+
+  const isBack = _pendingRestoreScroll || isBackNavigation(oldKey, key);
+  _pendingRestoreScroll = false;
+
   _lastViewKey = key;
 
   renderViewInternal();
@@ -390,11 +523,12 @@ export function renderView() {
       disposeLabCanvas();
     }
 
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    document.querySelectorAll('.materi-content, .component-detail-page, .materi-container')
-      .forEach(el => { el.scrollTop = 0; });
+    if (isBack && scrollPositions.has(key)) {
+      applyScrollPosition(scrollPositions.get(key), key);
+    } else {
+      resetScroll();
+      scrollPositions.delete(key);
+    }
   }
 }
 

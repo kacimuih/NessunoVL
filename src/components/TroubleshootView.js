@@ -365,7 +365,7 @@ export function renderTroubleshootView() {
     document.body.classList.remove('canvas-active');
     state.activeTroubleshootId = null;
     state.canvas.highlightedComponentIds = [];
-    navigate('troubleshoot');
+    navigate('troubleshoot', { restoreScroll: true });
   });
 
   // Canvas visibility helper & tab switching router
@@ -699,13 +699,14 @@ function renderTroubleshootSelectionList(container) {
 
   // Add click events
   document.getElementById('btn-back-home').addEventListener('click', () => {
-    navigate('home');
+    navigate('home', { restoreScroll: true });
   });
 
   TROUBLESHOOT_SCENARIOS.forEach(s => {
     const card = document.getElementById(`card-${s.id}`);
     if (card) {
       card.addEventListener('click', () => {
+        state.lastOpenedItemId = s.id;
         navigate('troubleshoot', { scenarioId: s.id });
       });
     }
@@ -833,7 +834,7 @@ function showValidationSuccessModal(scenario, message) {
   document.getElementById('btn-ts-dialog-list').addEventListener('click', () => {
     close();
     state.activeTroubleshootId = null;
-    navigate('troubleshoot');
+    navigate('troubleshoot', { restoreScroll: true });
   });
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 }

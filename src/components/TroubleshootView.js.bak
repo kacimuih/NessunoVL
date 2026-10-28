@@ -7,7 +7,7 @@ import { validateTroubleshoot } from '../utils/troubleshootValidator.js';
 import { detectAllErrors } from '../utils/circuitEvaluator.js';
 import { playBeep, playSuccess, playError, playWarning, playUIClick } from '../utils/audioFeedback.js';
 import { showConfirmDialog } from '../utils/appDialog.js';
-import { renderLabCanvas, getAvailablePaletteItems, applyViewportTransform } from './LabCanvas.js';
+import { renderLabCanvas, getAvailablePaletteItems, applyViewportTransform, fitToView } from './LabCanvas.js';
 import { getPaletteThumbnail } from '../data/realisticAssets.js';
 
 // Session memory for active tab per troubleshoot scenario
@@ -31,8 +31,9 @@ export function renderTroubleshootView() {
 
   if (state.activeTroubleshootId) {
     if (!_troubleshootTabMemory.has(state.activeTroubleshootId)) {
-      _troubleshootTabMemory.set(state.activeTroubleshootId, false);
-      state.instructionCollapsed = false;
+      const isLandscapeMobile = window.matchMedia('(max-width: 768px) and (orientation: landscape) and (max-height: 520px)').matches;
+      _troubleshootTabMemory.set(state.activeTroubleshootId, isLandscapeMobile);
+      state.instructionCollapsed = isLandscapeMobile;
     } else {
       state.instructionCollapsed = !!_troubleshootTabMemory.get(state.activeTroubleshootId);
     }
@@ -371,21 +372,7 @@ export function renderTroubleshootView() {
   const ensureCanvasVisible = () => {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer || !state.canvas.components.length) return;
-    const rect = canvasContainer.getBoundingClientRect();
-    const visibleW = rect.width || window.innerWidth;
-    const visibleH = rect.height || (window.innerHeight - 113);
-    const zoom = state.canvas.zoom || 1;
-    const pan = state.canvas.pan || { x: 0, y: 0 };
-    const hasVisibleComp = state.canvas.components.some(c => {
-      const sx = c.x * zoom + pan.x;
-      const sy = c.y * zoom + pan.y;
-      return sx >= -100 && sx <= visibleW && sy >= -100 && sy <= visibleH;
-    });
-    if (!hasVisibleComp) {
-      state.canvas.zoom = 1;
-      state.canvas.pan = { x: 0, y: 0 };
-      renderLabCanvas(canvasContainer);
-    }
+    fitToView(canvasContainer);
   };
 
   const btnToggleTsInstruction = document.getElementById('btn-toggle-ts-instruction');
@@ -592,9 +579,7 @@ export function renderTroubleshootView() {
   const btnZoomFit = document.getElementById('btn-zoom-fit');
   if (btnZoomFit) {
     btnZoomFit.addEventListener('click', () => {
-      state.canvas.zoom = 1;
-      state.canvas.pan = { x: 0, y: 0 };
-      applyViewportTransform();
+      fitToView();
     });
   }
 

@@ -3,7 +3,7 @@
 import { materiData } from '../data/materiData.js';
 import { resolveAssetUrl } from '../data/realisticAssets.js';
 import { MATERI_PRESETS } from '../data/materiPresets.js';
-import { updateState, state, navigate } from '../main.js';
+import { updateState, state, navigate, clearSavedScroll } from '../main.js';
 import { playUIClick } from '../utils/audioFeedback.js';
 
 
@@ -115,7 +115,7 @@ export function renderMateriView() {
         }
 
         html += `
-          <div class="alat-card" ${grid.detail ? `data-detail-id="${grid.detailId}"` : ''} ${grid.detail ? 'style="cursor:pointer;"' : ''}>
+          <div class="alat-card" ${grid.detail ? `id="card-${grid.detailId}" data-detail-id="${grid.detailId}"` : ''} ${grid.detail ? 'style="cursor:pointer;"' : ''}>
             ${placeholderHtml}
             <h4>${grid.name}</h4>
             <p>${grid.desc}</p>
@@ -146,7 +146,7 @@ export function renderMateriView() {
 
   // Add event listeners
   document.getElementById('btn-back-home').addEventListener('click', () => {
-    navigate('home');
+    navigate('home', { restoreScroll: true });
   });
 
   const items = container.querySelectorAll('.materi-item');
@@ -155,8 +155,13 @@ export function renderMateriView() {
       playUIClick();
       const targetId = e.currentTarget.getAttribute('data-id');
       updateState({ activeMateriId: targetId });
+      clearSavedScroll('materi|||');
+      const contentEl = document.querySelector('.materi-content');
+      if (contentEl) contentEl.scrollTop = 0;
+      window.scrollTo(0, 0);
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
       if (window.innerWidth <= 768) {
-        const contentEl = document.querySelector('.materi-content');
         if (contentEl) {
           contentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -184,6 +189,7 @@ export function renderMateriView() {
       const item = findGridItemDetail(detailId);
       if (item) {
         playUIClick();
+        state.lastOpenedItemId = detailId;
         navigate('component_detail', { detailId });
       }
     });
@@ -197,6 +203,7 @@ export function renderMateriView() {
       const item = findGridItemDetail(detailId);
       if (item) {
         playUIClick();
+        state.lastOpenedItemId = detailId;
         navigate('component_detail', { detailId });
       }
     });

@@ -841,7 +841,7 @@ export function renderSettingsView() {
   // Attach event listeners
   document.getElementById('btn-back-home').addEventListener('click', () => {
     playUIClick();
-    navigate('home');
+    navigate('home', { restoreScroll: true });
   });
 
   // Theme change

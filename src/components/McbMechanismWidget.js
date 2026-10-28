@@ -3,7 +3,7 @@ import { playUIClick } from '../utils/audioFeedback.js';
 
 // Format angka Indonesia
 const fmtA = a => `${(Math.round(a * 10) / 10).toLocaleString('id-ID')} A`;
-const fmtMult = m => (Math.round(m * 10) / 10).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmtMult = m => (Math.round(m * 100) / 100).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
 
 export function renderMcbMechanismWidget(containerId) {
   const container = document.getElementById(containerId);
@@ -34,8 +34,8 @@ export function renderMcbMechanismWidget(containerId) {
       if (!stage) return;
       const top = stage.getBoundingClientRect().top;
       const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 56;
-      // Hanya bergulir jika stage belum terlihat jelas (hindari lompatan saat ditekan berulang)
-      if (top < navH || top > window.innerHeight * 0.55) {
+      // Bergulir agar kartu kesimpulan dan badge status di atas stage langsung terlihat
+      if (top < navH || top > navH + 30) {
         stage.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
       }
     }));
@@ -55,6 +55,10 @@ export function renderMcbMechanismWidget(containerId) {
   let measuredAmps = 6;  // arus terukur (0 setelah trip)
   let isRunning = false;
   let isMcbOn = true;
+  let hasRun = false;    // melacak apakah simulasi telah dijalankan
+  let isTimelapse = false; // melacak apakah percepatan waktu sedang berjalan
+  let virtualTimeText = ''; // teks jam virtual saat mode time-lapse
+  let isTechDetailsOpen = false; // mempertahankan status akordeon detail teknis
   let animTimers = [];
   let _rafId = null;
   let activeHighlight = null;
@@ -90,6 +94,13 @@ export function renderMcbMechanismWidget(containerId) {
     return '> 1 jam';
   }
 
+  function formatVirtualTime(sec) {
+    if (sec < 60) return `${Math.round(sec)} detik`;
+    if (sec < 3600) return `${Math.round(sec / 60)} menit`;
+    const h = Math.round((sec / 3600) * 10) / 10;
+    return `${h.toLocaleString('id-ID')} jam`;
+  }
+
   // Steps state
   let steps = [
     { text: 'Beban normal terhubung (6 A di bawah rating 10 A).', status: 'done' },
@@ -103,6 +114,131 @@ export function renderMcbMechanismWidget(containerId) {
     type: 'normal'
   };
 
+  // Helper kesimpulan 1 kalimat ramah pemula
+  function getOneSentenceSummary(analysis, runState, mcbOn, running) {
+    if (isTimelapse) {
+      return {
+        type: 'warning',
+        icon: 'bi-hourglass-split',
+        text: `Simulasi dipercepat aktif: ${virtualTimeText || 'bimetal sedang memanas...'}`
+      };
+    }
+    if (!runState) {
+      return {
+        type: 'idle',
+        icon: 'bi-info-circle-fill',
+        text: 'Pengaturan siap. Tekan "Jalankan Simulasi" untuk melihat apakah MCB trip.'
+      };
+    }
+    if (analysis.kind === 'off') {
+      return {
+        type: 'idle',
+        icon: 'bi-power',
+        text: 'Arus beban 0 A, kontak MCB terbuka dan tidak ada aliran arus.'
+      };
+    }
+    if (analysis.kind === 'normal') {
+      return {
+        type: 'safe',
+        icon: 'bi-check-circle-fill',
+        text: `MCB tetap ON karena arus ${loadAmps} A masih di bawah batas aman (${(1.13 * ratingIn).toFixed(1)} A).`
+      };
+    }
+    if (analysis.kind === 'caution') {
+      if (mcbOn) {
+        return {
+          type: 'warning',
+          icon: 'bi-exclamation-triangle-fill',
+          text: `MCB tetap ON karena batas trip cepat baru di 1,45 × In (${(1.45 * ratingIn).toFixed(1)} A). Bimetal memanas dan baru trip setelah ${formatTime(analysis.timeSec)} bila beban terus bertahan.`
+        };
+      }
+      return {
+        type: 'danger',
+        icon: 'bi-slash-circle-fill',
+        text: `MCB akhirnya trip setelah waktu virtual ${formatTime(analysis.timeSec)}. Panas berlebih memutus kontak demi keamanan kabel.`
+      };
+    }
+    if (analysis.kind === 'thermal') {
+      if (running) {
+        return {
+          type: 'warning',
+          icon: 'bi-hourglass-split',
+          text: `MCB mendeteksi beban lebih (${loadAmps} A), bimetal sedang memanas bertahap...`
+        };
+      }
+      if (!mcbOn) {
+        return {
+          type: 'danger',
+          icon: 'bi-slash-circle-fill',
+          text: `MCB trip karena kabel kelebihan beban (${loadAmps} A). Estimasi waktu nyata: ${formatTime(analysis.timeSec)}.`
+        };
+      }
+      return {
+        type: 'warning',
+        icon: 'bi-exclamation-triangle-fill',
+        text: `MCB akan trip setelah ${formatTime(analysis.timeSec)} karena kabel kelebihan beban.`
+      };
+    }
+    if (analysis.kind === 'magnetic') {
+      if (running) {
+        return {
+          type: 'danger',
+          icon: 'bi-lightning-charge-fill',
+          text: `Lonjakan arus korslet masif (${loadAmps} A)! Solenoid merespons seketika...`
+        };
+      }
+      if (!mcbOn) {
+        return {
+          type: 'danger',
+          icon: 'bi-lightning-charge-fill',
+          text: `MCB langsung trip seketika (< 0,1 detik) karena terjadi korslet (${loadAmps} A)!`
+        };
+      }
+      return {
+        type: 'danger',
+        icon: 'bi-lightning-charge-fill',
+        text: `MCB akan trip seketika (< 0,1 detik) karena lonjakan hubung singkat (${loadAmps} A)!`
+      };
+    }
+    return {
+      type: 'idle',
+      icon: 'bi-info-circle-fill',
+      text: 'Pengaturan siap.'
+    };
+  }
+
+  // Modal penjelasan istilah ramah HP sentuh
+  function showInfoModal(type) {
+    const overlay = container.querySelector('#mcb2-info-overlay');
+    const title = container.querySelector('#mcb2-info-title');
+    const body = container.querySelector('#mcb2-info-body');
+    if (!overlay || !title || !body) return;
+
+    if (type === 'rating') {
+      title.innerHTML = '<i class="bi bi-info-circle-fill" style="color:var(--accent-color);"></i> Rating MCB (In)';
+      body.innerHTML = `
+        <p><strong>Rating (In / Arus Nominal)</strong> adalah batas arus listrik normal yang dapat dialirkan MCB secara terus-menerus tanpa memutus rangkaian (tanpa trip).</p>
+        <p>Contohnya, MCB <strong>${ratingIn} A</strong> aman dipakai sampai sekitar <strong>${ratingIn} A</strong>. Jika arus melampaui batas ini secara terus-menerus (1,13× hingga 1,45× ke atas), bimetal di dalam MCB akan memanas dan perlahan memicu trip termal untuk mencegah kabel terbakar.</p>
+      `;
+    } else if (type === 'curve') {
+      title.innerHTML = '<i class="bi bi-info-circle-fill" style="color:var(--accent-color);"></i> Kurva Trip MCB';
+      body.innerHTML = `
+        <p><strong>Kurva trip</strong> menentukan seberapa besar lonjakan arus sesaat yang membuat MCB <em>langsung trip seketika</em> (trip magnetik instan tanpa menunggu panas bimetal):</p>
+        <ul style="padding-left: 20px; margin: 8px 0; display:flex; flex-direction:column; gap:6px;">
+          <li><strong>Kurva B (3–5 × In)</strong>: Paling sensitif. Cocok untuk penerangan rumah tinggal, perangkat elektronik sensitif, dan beban pemanas murni.</li>
+          <li><strong>Kurva C (5–10 × In)</strong>: Standar umum instalasi listrik. Mampu menahan lonjakan start wajar seperti kulkas, AC, atau pompa air kecil.</li>
+          <li><strong>Kurva D (10–20 × In)</strong>: Paling tahan lonjakan. Khusus motor industri besar, transformator, atau mesin las berdaya tinggi.</li>
+        </ul>
+      `;
+    }
+    overlay.style.display = 'flex';
+  }
+
+  function hideInfoModal() {
+    const overlay = container.querySelector('#mcb2-info-overlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
   function clearAllTimers() {
     if (_rafId) {
       cancelAnimationFrame(_rafId);
@@ -110,6 +246,8 @@ export function renderMcbMechanismWidget(containerId) {
     }
     animTimers.forEach(t => clearTimeout(t));
     animTimers = [];
+    isTimelapse = false;
+    virtualTimeText = '';
   }
 
   function scheduleReadouts() {
@@ -193,14 +331,17 @@ export function renderMcbMechanismWidget(containerId) {
         type: 'safe'
       };
     } else if (analysis.kind === 'caution') {
+      const mFmt = fmtMult(analysis.m);
+      const tripFastA = fmtA(1.45 * ratingIn);
+      const timeFmt = formatTime(analysis.timeSec);
       steps = [
-        { text: `Arus beban (${loadAmps} A = ${analysis.m.toFixed(2)} × In) melampaui 1,13 × In.`, status: 'pending' },
-        { text: `Bimetal memanas sangat perlahan.`, status: 'pending' },
-        { text: `Trip baru akan terjadi setelah > 1 jam (${formatTime(analysis.timeSec)}).`, status: 'pending' }
+        { text: `Arus beban (${loadAmps} A = ${mFmt} × In) melampaui batas aman 1,13 × In.`, status: 'pending' },
+        { text: 'Bimetal memanas sangat perlahan (zona waspada).', status: 'pending' },
+        { text: `Trip baru akan terjadi setelah > 1 jam (${timeFmt}).`, status: 'pending' }
       ];
       resultNote = {
-        title: `Prediksi: Waspada — Arus Lebih Ringan (${loadAmps} A)`,
-        text: `Arus ${loadAmps} A (${analysis.m.toFixed(2)} × In) berada di zona 1,13–1,45 × In. Bimetal memanas perlahan, trip baru terjadi setelah ${formatTime(analysis.timeSec)} bila beban terus bertahan.`,
+        title: `Prediksi: Waspada — Beban Lebih Ringan (${loadAmps} A)`,
+        text: `Arus ${loadAmps} A = ${mFmt} × In. MCB belum trip karena batas trip cepat baru di 1,45 × In (${tripFastA}). MCB sengaja memberi toleransi untuk lonjakan arus singkat supaya tidak trip tanpa alasan. Namun bila berlangsung lama, kabel dan bimetal terus memanas dan MCB baru trip setelah ${timeFmt}. Dalam praktik, beban seperti ini harus dikurangi.`,
         type: 'warning'
       };
     } else if (analysis.kind === 'thermal') {
@@ -233,6 +374,7 @@ export function renderMcbMechanismWidget(containerId) {
     clearAllTimers();
     isRunning = false;
     isMcbOn = true;
+    hasRun = false;
     measuredAmps = loadAmps;
     activeHighlight = null;
     updatePredictionState();
@@ -245,6 +387,7 @@ export function renderMcbMechanismWidget(containerId) {
     clearAllTimers();
     isRunning = true;
     isMcbOn = true;
+    hasRun = true;
     measuredAmps = loadAmps;
 
     const analysis = analyzeTrip(ratingIn, curve, loadAmps);
@@ -279,14 +422,17 @@ export function renderMcbMechanismWidget(containerId) {
     }
 
     if (analysis.kind === 'caution') {
+      const mFmt = fmtMult(analysis.m);
+      const tripFastA = fmtA(1.45 * ratingIn);
+      const timeFmt = formatTime(analysis.timeSec);
       steps = [
-        { text: `Arus beban (${loadAmps} A = ${analysis.m.toFixed(2)} × In) melampaui 1,13 × In.`, status: 'active' },
-        { text: 'Bimetal memanas sangat perlahan.', status: 'pending' },
-        { text: `Trip baru akan terjadi setelah > 1 jam (${formatTime(analysis.timeSec)}).`, status: 'pending' }
+        { text: `Arus beban (${loadAmps} A = ${mFmt} × In) melampaui batas aman 1,13 × In.`, status: 'active' },
+        { text: 'Bimetal memanas perlahan; MCB menoleransi lonjakan singkat.', status: 'pending' },
+        { text: `Trip baru akan terjadi setelah sekitar ${timeFmt} bila beban terus bertahan.`, status: 'pending' }
       ];
       resultNote = {
-        title: `Waspada — Arus Lebih Ringan (${loadAmps} A)`,
-        text: `Arus berada pada zona 1,13–1,45 × In. Bimetal memanas perlahan, trip konvensional baru terpicu setelah ${formatTime(analysis.timeSec)} bila beban terus bertahan.`,
+        title: `Waspada — Beban Lebih Ringan (${loadAmps} A)`,
+        text: `Arus ${loadAmps} A = ${mFmt} × In. MCB belum trip karena batas trip cepat baru di 1,45 × In (${tripFastA}). MCB sengaja memberi toleransi untuk lonjakan arus singkat supaya tidak trip tanpa alasan. Namun arus ini melebihi kapasitas normal: kabel dan MCB terus memanas dan MCB baru trip setelah sekitar ${timeFmt}. Dalam praktik, beban seperti ini harus dikurangi.`,
         type: 'warning'
       };
       renderDynamic();
@@ -301,8 +447,9 @@ export function renderMcbMechanismWidget(containerId) {
 
       animTimers.push(setTimeout(() => {
         isRunning = false;
-        setStepsState(['done', 'done', 'done']);
+        setStepsState(['done', 'done', 'pending']);
         updateStepsUI();
+        renderDynamic();
       }, 1800));
       return;
     }
@@ -383,11 +530,87 @@ export function renderMcbMechanismWidget(containerId) {
     }
   }
 
+  // 4b. Simulasi Percepatan Waktu (Time-lapse) khusus caution / thermal lambat
+  function runTimelapse(analysis) {
+    if (isRunning) return;
+    playUIClick();
+    clearAllTimers();
+    isTimelapse = true;
+    isRunning = true;
+    isMcbOn = true;
+    measuredAmps = loadAmps;
+
+    const targetSec = analysis.timeSec;
+    virtualTimeText = '0 menit';
+
+    steps = [
+      { text: `Simulasi dipercepat aktif (estimasi trip: ${formatTime(targetSec)}).`, status: 'active' },
+      { text: 'Bimetal menyerap panas secara akumulatif & mulai melengkung.', status: 'pending' },
+      { text: 'Pengunci terdorong, kontak terbuka & MCB trip.', status: 'pending' }
+    ];
+    highlightElement('hl-bimetal');
+    renderDynamic();
+    scrollToStage();
+
+    // Langkah 1: 1,2 detik (~25% waktu virtual)
+    animTimers.push(setTimeout(() => {
+      if (!isTimelapse) return;
+      virtualTimeText = `${formatVirtualTime(targetSec * 0.25)} (bimetal mulai memanas)`;
+      setStepsState(['done', 'active', 'pending']);
+      updateStepsUI();
+      scheduleReadouts();
+    }, 1200));
+
+    // Langkah 2: 2,8 detik (~50% waktu virtual)
+    animTimers.push(setTimeout(() => {
+      if (!isTimelapse) return;
+      virtualTimeText = `${formatVirtualTime(targetSec * 0.5)} (suhu naik, bimetal melengkung)`;
+      updateStepsUI();
+      scheduleReadouts();
+    }, 2800));
+
+    // Langkah 3: 4,5 detik (~75% waktu virtual)
+    animTimers.push(setTimeout(() => {
+      if (!isTimelapse) return;
+      virtualTimeText = `${formatVirtualTime(targetSec * 0.75)} (bimetal mendekati pengunci)`;
+      updateStepsUI();
+      scheduleReadouts();
+    }, 4500));
+
+    // Langkah 4: 6,0 detik (~95% waktu virtual)
+    animTimers.push(setTimeout(() => {
+      if (!isTimelapse) return;
+      virtualTimeText = `${formatVirtualTime(targetSec * 0.95)} (suhu kritis tercapai!)`;
+      updateStepsUI();
+      scheduleReadouts();
+    }, 6000));
+
+    // Langkah 5: 7,0 detik -> TRIP
+    animTimers.push(setTimeout(() => {
+      if (!isTimelapse) return;
+      isMcbOn = false;
+      measuredAmps = 0;
+      isRunning = false;
+      isTimelapse = false;
+      virtualTimeText = '';
+      setStepsState(['done', 'done', 'done']);
+      highlightElement('hl-contacts');
+
+      resultNote = {
+        title: 'Proteksi Berhasil — MCB Akhirnya TRIP',
+        text: `Setelah waktu virtual sekitar ${formatTime(targetSec)}, panas akumulatif membuat bimetal melengkung maksimal dan melepaskan pengunci kontak. Tuas jatuh ke posisi TRIP dan aliran listrik terputus (0 A) demi mencegah kabel terbakar.`,
+        type: 'danger'
+      };
+      renderDynamic();
+    }, 7000));
+  }
+
   // Toggle Tuas Saklar Manual
   function toggleManualLever() {
     if (isRunning) return;
     playUIClick();
     clearAllTimers();
+    hasRun = true;
     isMcbOn = !isMcbOn;
     measuredAmps = isMcbOn ? loadAmps : 0;
     steps = [
@@ -411,10 +634,21 @@ export function renderMcbMechanismWidget(containerId) {
 
     ctrlContainer.innerHTML = `
       <div class="mcb2-ctrl">
+        <!-- Blok 1: Rating & Kurva -->
         <div class="mcb2-ctrl-block">
+          <div class="mcb2-block-tag">① Pilih MCB</div>
+
           <div class="mcb2-ctrl-title">
-            <span>Rating MCB (In):</span>
+            <span class="mcb2-title-label">
+              Rating MCB (In):
+              <button type="button" class="mcb2-info-btn" data-info="rating" title="Apa itu Rating MCB (In)?" aria-label="Apa itu Rating In?">
+                <i class="bi bi-info-circle"></i>
+              </button>
+            </span>
             <strong id="ctrl-in-val">${ratingIn} A</strong>
+          </div>
+          <div class="mcb2-field-desc">
+            Rating = batas arus normal MCB. MCB <span id="ctrl-in-hint">${ratingIn} A</span> aman dipakai sampai sekitar <span id="ctrl-in-hint-val">${ratingIn} A</span>.
           </div>
           <div class="mcb2-chip-row" id="ctrl-rating" role="group" aria-label="Rating MCB">
             ${RATINGS.map(r => `
@@ -424,9 +658,17 @@ export function renderMcbMechanismWidget(containerId) {
             `).join('')}
           </div>
 
-          <div class="mcb2-ctrl-title" style="margin-top: 4px;">
-            <span>Kurva trip:</span>
+          <div class="mcb2-ctrl-title" style="margin-top: 6px;">
+            <span class="mcb2-title-label">
+              Kurva Trip:
+              <button type="button" class="mcb2-info-btn" data-info="curve" title="Apa itu Kurva Trip?" aria-label="Apa itu Kurva Trip?">
+                <i class="bi bi-info-circle"></i>
+              </button>
+            </span>
             <span style="font-size:0.75rem; color:var(--text-muted);">(ambang magnetik)</span>
+          </div>
+          <div class="mcb2-field-desc">
+            Kurva menentukan seberapa besar lonjakan arus yang membuat MCB langsung trip. B = paling sensitif (lampu/rumah), C = umum (beban campuran), D = paling tahan lonjakan (motor/trafo).
           </div>
           <div class="mcb2-chip-row" id="ctrl-curve" role="group" aria-label="Kurva trip">
             <button class="mcb2-chip ${curve === 'B' ? 'active' : ''}" data-curve="B" aria-pressed="${curve === 'B'}">B (3–5 In)</button>
@@ -435,33 +677,50 @@ export function renderMcbMechanismWidget(containerId) {
           </div>
         </div>
 
+        <!-- Blok 2: Arus Beban & Tombol Jalankan -->
         <div class="mcb2-ctrl-block">
+          <div class="mcb2-block-tag">② Tentukan Arus Beban</div>
+
           <div class="mcb2-ctrl-title">
             <span>Arus beban (I):</span>
             <div class="mcb2-ctrl-amps-input-wrap">
               <input id="ctrl-amps-num" type="number" min="0.5" max="3000" step="0.5" inputmode="decimal" value="${loadAmps}">
               <span style="font-size: 0.82rem; font-weight: 700;">A</span>
-              <span id="ctrl-amps-mult">= ${fmtMult(loadAmps / ratingIn)} × In</span>
+              <span id="ctrl-amps-mult">≈ ${Math.round((loadAmps / ratingIn) * 100)}% dari rating</span>
             </div>
           </div>
 
           <input id="ctrl-amps-range" type="range" min="0" max="1000" step="1" value="${ampsToPos(loadAmps)}" aria-label="Arus beban">
 
-          <!-- Preset Ringkas 3 Kolom -->
+          <!-- Preset Ringkas 3 Kolom dengan subteks penjelasan -->
           <div class="mcb2-chip-row mcb2-preset-row" id="ctrl-presets">
-            <button class="mcb2-chip mcb2-chip-preset" data-preset="normal" aria-label="Normal, ${fmtA(0.6 * ratingIn)}">
-              <span class="p-name">Normal</span><small class="p-val">${fmtA(0.6 * ratingIn)}</small>
+            <button class="mcb2-chip mcb2-chip-preset" data-preset="normal" aria-label="Normal, Aman, MCB tidak trip, ${fmtA(0.6 * ratingIn)}">
+              <span class="p-name">Normal</span>
+              <span class="p-desc">Aman, MCB tidak trip</span>
+              <small class="p-val">${fmtA(0.6 * ratingIn)}</small>
             </button>
-            <button class="mcb2-chip mcb2-chip-preset" data-preset="overload" aria-label="Beban Lebih, ${fmtA(2 * ratingIn)}">
-              <span class="p-name">Beban Lebih</span><small class="p-val">${fmtA(2 * ratingIn)}</small>
+            <button class="mcb2-chip mcb2-chip-preset" data-preset="overload" aria-label="Beban Lebih, Trip pelan (panas), ${fmtA(2 * ratingIn)}">
+              <span class="p-name">Beban Lebih</span>
+              <span class="p-desc">Trip pelan (panas)</span>
+              <small class="p-val">${fmtA(2 * ratingIn)}</small>
             </button>
-            <button class="mcb2-chip mcb2-chip-preset" data-preset="short" aria-label="Hubung Singkat, ${fmtA(Math.round(CURVES[curve].hi * 1.2 * ratingIn))}">
-              <span class="p-name">Hubung Singkat</span><small class="p-val">${fmtA(Math.round(CURVES[curve].hi * 1.2 * ratingIn))}</small>
+            <button class="mcb2-chip mcb2-chip-preset" data-preset="short" aria-label="Hubung Singkat, Trip seketika, ${fmtA(Math.round(CURVES[curve].hi * 1.2 * ratingIn))}">
+              <span class="p-name">Hubung Singkat</span>
+              <span class="p-desc">Trip seketika</span>
+              <small class="p-val">${fmtA(Math.round(CURVES[curve].hi * 1.2 * ratingIn))}</small>
+            </button>
+          </div>
+
+          <!-- Tips Uji Beban Lebih Ringan (Zona Waspada 1,3x In) -->
+          <div class="mcb2-tip-row">
+            <button type="button" class="mcb2-tip-chip" id="btn-mcb2-try-caution" title="Uji beban 1,3 × In pada zona waspada">
+              <i class="bi bi-lightbulb-fill"></i>
+              <span>Coba <strong>1,3 &times; In</strong> (<span id="tip-caution-val">${fmtA(1.3 * ratingIn)}</span>) untuk melihat zona waspada</span>
             </button>
           </div>
 
           <button id="btn-mcb2-run" class="btn-mcb2-run">
-            <i class="bi bi-play-fill"></i> Jalankan Simulasi
+            <i class="bi bi-play-fill"></i> <span class="btn-step-num">③</span> Jalankan Simulasi
           </button>
         </div>
       </div>
@@ -474,15 +733,26 @@ export function renderMcbMechanismWidget(containerId) {
         const val = btn.querySelector('.p-val');
         if (val) val.textContent = fmtA(a);
         const name = btn.querySelector('.p-name');
-        if (name) btn.setAttribute('aria-label', `${name.textContent}, ${fmtA(a)}`);
+        const desc = btn.querySelector('.p-desc');
+        if (name) btn.setAttribute('aria-label', `${name.textContent}, ${desc ? desc.textContent + ', ' : ''}${fmtA(a)}`);
       };
       set('normal', 0.6 * ratingIn);
       set('overload', 2 * ratingIn);
       set('short', Math.round(CURVES[curve].hi * 1.2 * ratingIn));
+      const tipVal = ctrlContainer.querySelector('#tip-caution-val');
+      if (tipVal) tipVal.textContent = fmtA(1.3 * ratingIn);
     }
 
     // Delegasi Event Click pada #mcb2-controls (Hanya terpasang sekali)
     ctrlContainer.addEventListener('click', e => {
+      const infoBtn = e.target.closest('.mcb2-info-btn');
+      if (infoBtn) {
+        playUIClick();
+        const infoType = infoBtn.getAttribute('data-info');
+        showInfoModal(infoType);
+        return;
+      }
+
       const ratingBtn = e.target.closest('#ctrl-rating .mcb2-chip');
       if (ratingBtn) {
         playUIClick();
@@ -494,8 +764,12 @@ export function renderMcbMechanismWidget(containerId) {
         });
         const inValEl = ctrlContainer.querySelector('#ctrl-in-val');
         if (inValEl) inValEl.textContent = `${ratingIn} A`;
+        const inHintEl = ctrlContainer.querySelector('#ctrl-in-hint');
+        if (inHintEl) inHintEl.textContent = `${ratingIn} A`;
+        const inHintValEl = ctrlContainer.querySelector('#ctrl-in-hint-val');
+        if (inHintValEl) inHintValEl.textContent = `${ratingIn} A`;
         const ampsMultEl = ctrlContainer.querySelector('#ctrl-amps-mult');
-        if (ampsMultEl) ampsMultEl.textContent = `= ${fmtMult(loadAmps / ratingIn)} × In`;
+        if (ampsMultEl) ampsMultEl.textContent = `≈ ${Math.round((loadAmps / ratingIn) * 100)}% dari rating`;
         syncPresetLabels();
         onControlParamChanged();
         return;
@@ -530,7 +804,21 @@ export function renderMcbMechanismWidget(containerId) {
         const ampsMultEl = ctrlContainer.querySelector('#ctrl-amps-mult');
         if (ampsNumEl) ampsNumEl.value = loadAmps;
         if (ampsRangeEl) ampsRangeEl.value = ampsToPos(loadAmps);
-        if (ampsMultEl) ampsMultEl.textContent = `= ${fmtMult(loadAmps / ratingIn)} × In`;
+        if (ampsMultEl) ampsMultEl.textContent = `≈ ${Math.round((loadAmps / ratingIn) * 100)}% dari rating`;
+        runSimulation();
+        return;
+      }
+
+      const cautionTipBtn = e.target.closest('#btn-mcb2-try-caution');
+      if (cautionTipBtn) {
+        playUIClick();
+        loadAmps = Math.round(1.3 * ratingIn * 10) / 10;
+        const ampsNumEl = ctrlContainer.querySelector('#ctrl-amps-num');
+        const ampsRangeEl = ctrlContainer.querySelector('#ctrl-amps-range');
+        const ampsMultEl = ctrlContainer.querySelector('#ctrl-amps-mult');
+        if (ampsNumEl) ampsNumEl.value = loadAmps;
+        if (ampsRangeEl) ampsRangeEl.value = ampsToPos(loadAmps);
+        if (ampsMultEl) ampsMultEl.textContent = `≈ ${Math.round((loadAmps / ratingIn) * 100)}% dari rating`;
         runSimulation();
         return;
       }
@@ -544,13 +832,17 @@ export function renderMcbMechanismWidget(containerId) {
 
     // Delegasi Event Input (Slider & Number) - TIDAK merender ulang SVG
     ctrlContainer.addEventListener('input', e => {
+      hasRun = false;
+      isRunning = false;
+      isMcbOn = true;
+      clearAllTimers();
       if (e.target && e.target.id === 'ctrl-amps-range') {
         loadAmps = posToAmps(Number(e.target.value));
         const ampsNumEl = ctrlContainer.querySelector('#ctrl-amps-num');
         if (ampsNumEl) ampsNumEl.value = loadAmps;
         const ampsMultEl = ctrlContainer.querySelector('#ctrl-amps-mult');
-        if (ampsMultEl) ampsMultEl.textContent = `= ${fmtMult(loadAmps / ratingIn)} × In`;
-        if (isMcbOn && !isRunning) measuredAmps = loadAmps;
+        if (ampsMultEl) ampsMultEl.textContent = `≈ ${Math.round((loadAmps / ratingIn) * 100)}% dari rating`;
+        measuredAmps = loadAmps;
         scheduleReadouts();
       } else if (e.target && e.target.id === 'ctrl-amps-num') {
         let val = parseFloat(e.target.value);
@@ -561,8 +853,8 @@ export function renderMcbMechanismWidget(containerId) {
           const ampsRangeEl = ctrlContainer.querySelector('#ctrl-amps-range');
           if (ampsRangeEl) ampsRangeEl.value = ampsToPos(loadAmps);
           const ampsMultEl = ctrlContainer.querySelector('#ctrl-amps-mult');
-          if (ampsMultEl) ampsMultEl.textContent = `= ${fmtMult(loadAmps / ratingIn)} × In`;
-          if (isMcbOn && !isRunning) measuredAmps = loadAmps;
+          if (ampsMultEl) ampsMultEl.textContent = `≈ ${Math.round((loadAmps / ratingIn) * 100)}% dari rating`;
+          measuredAmps = loadAmps;
           scheduleReadouts();
         }
       }
@@ -678,12 +970,39 @@ export function renderMcbMechanismWidget(containerId) {
   function updateReadouts() {
     const analysis = analyzeTrip(ratingIn, curve, loadAmps);
     const m = loadAmps / ratingIn;
+    const pct = Math.round((loadAmps / ratingIn) * 100);
 
-    // 1. Label kelipatan di kontrol
+    // 1. Label persentase di kontrol
     const ampsMultEl = container.querySelector('#ctrl-amps-mult');
-    if (ampsMultEl) ampsMultEl.textContent = `= ${fmtMult(m)} × In`;
+    if (ampsMultEl) ampsMultEl.textContent = `≈ ${pct}% dari rating`;
 
-    // 2. Meter Arus Logaritmik
+    // 2. Update Kesimpulan 1 Kalimat & Status Badge
+    const sumCard = container.querySelector('#mcb2-summary-card');
+    const sumInfo = getOneSentenceSummary(analysis, hasRun, isMcbOn, isRunning);
+    if (sumCard) {
+      sumCard.className = `mcb2-summary-card summary-${sumInfo.type}`;
+      sumCard.innerHTML = `<i class="bi ${sumInfo.icon}"></i> <span>${sumInfo.text}</span>`;
+    }
+
+    const badge = container.querySelector('#mcb2-status-badge');
+    const badgeTxt = container.querySelector('#mcb2-status-badge-txt');
+    if (badge && badgeTxt) {
+      if (!hasRun) {
+        badge.className = 'mcb2-status-badge status-idle';
+        badge.innerHTML = '<i class="bi bi-pause-circle-fill"></i> <span id="mcb2-status-badge-txt">Belum disimulasikan</span>';
+      } else if (!isMcbOn) {
+        badge.className = 'mcb2-status-badge status-trip';
+        badge.innerHTML = '<i class="bi bi-slash-circle-fill"></i> <span id="mcb2-status-badge-txt">MCB TRIP — Aliran Terputus Aman (0 A)</span>';
+      } else if (analysis.kind === 'caution') {
+        badge.className = 'mcb2-status-badge status-caution';
+        badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> <span id="mcb2-status-badge-txt">MCB ON — Beban Lebih (belum trip)</span>';
+      } else {
+        badge.className = 'mcb2-status-badge status-on';
+        badge.innerHTML = `<i class="bi bi-check-circle-fill"></i> <span id="mcb2-status-badge-txt">MCB ON — Mengalirkan ${measuredAmps} A</span>`;
+      }
+    }
+
+    // 3. Meter Arus Logaritmik
     const mMin = 0.5;
     const mMax = 30;
     const logMin = Math.log(mMin);
@@ -691,7 +1010,7 @@ export function renderMcbMechanismWidget(containerId) {
     const clamped = Math.max(mMin, Math.min(mMax, m));
     const pointerPct = Math.round(((Math.log(clamped) - logMin) / (logMax - logMin)) * 1000) / 10;
 
-    const meterColor = isMcbOn
+    const meterColor = (!hasRun || isMcbOn)
       ? (m >= CURVES[curve].hi ? '#ef4444' : (m >= 1.45 ? '#f97316' : (m > 1.13 ? '#eab308' : '#10b981')))
       : '#64748b';
 
@@ -711,7 +1030,7 @@ export function renderMcbMechanismWidget(containerId) {
       pointer.style.left = pointerPct + '%';
     }
 
-    // 3. Ringkasan Prediksi Cepat Badge
+    // 4. Ringkasan Prediksi Cepat Badge (di dalam detail teknis)
     const predBadge = container.querySelector('#mcb2-pred-badge');
     if (predBadge) {
       predBadge.className = `mcb2-pred-badge pred-${analysis.kind}`;
@@ -729,7 +1048,7 @@ export function renderMcbMechanismWidget(containerId) {
       `;
     }
 
-    // 4. Update Prediksi Steps & Result Box saat sedang stanby (tidak animasi)
+    // 5. Update Prediksi Steps & Result Box saat sedang stanby (tidak animasi)
     if (!isRunning && isMcbOn) {
       updatePredictionState();
       updateStepsUI();
@@ -805,6 +1124,12 @@ export function renderMcbMechanismWidget(containerId) {
     const dynContainer = container.querySelector('#mcb2-dynamic');
     if (!dynContainer) return;
 
+    // Pertahankan status buka/tutup akordeon detail teknis
+    const existingDetails = dynContainer.querySelector('.mcb2-tech-details');
+    if (existingDetails) {
+      isTechDetailsOpen = existingDetails.open;
+    }
+
     const analysis = analyzeTrip(ratingIn, curve, loadAmps);
     const m = loadAmps / ratingIn;
 
@@ -825,12 +1150,27 @@ export function renderMcbMechanismWidget(containerId) {
     const pHi = toPct(CURVES[curve].hi);
     const pointerPct = toPct(m);
 
-    const meterColor = isMcbOn
+    const meterColor = (!hasRun || isMcbOn)
       ? (m >= CURVES[curve].hi ? '#ef4444' : (m >= 1.45 ? '#f97316' : (m > 1.13 ? '#eab308' : '#10b981')))
       : '#64748b';
 
+    const sumInfo = getOneSentenceSummary(analysis, hasRun, isMcbOn, isRunning);
+
     dynContainer.innerHTML = `
       <div class="mcb2-stage">
+        <!-- Paling Atas: Kesimpulan 1 Kalimat & Status Badge (Langsung Terlihat Saat Simulasi) -->
+        <div class="mcb2-stage-top">
+          <div class="mcb2-summary-card summary-${sumInfo.type}" id="mcb2-summary-card">
+            <i class="bi ${sumInfo.icon}"></i>
+            <span>${sumInfo.text}</span>
+          </div>
+
+          <div class="mcb2-status-badge ${!hasRun ? 'status-idle' : (!isMcbOn ? 'status-trip' : (analysis.kind === 'caution' ? 'status-caution' : 'status-on'))}" id="mcb2-status-badge">
+            <i class="bi ${!hasRun ? 'bi-pause-circle-fill' : (!isMcbOn ? 'bi-slash-circle-fill' : (analysis.kind === 'caution' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'))}"></i>
+            <span id="mcb2-status-badge-txt">${!hasRun ? 'Belum disimulasikan' : (!isMcbOn ? 'MCB TRIP — Aliran Terputus Aman (0 A)' : (analysis.kind === 'caution' ? 'MCB ON — Beban Lebih (belum trip)' : `MCB ON — Mengalirkan ${measuredAmps} A`))}</span>
+          </div>
+        </div>
+
         <!-- Kolom Kiri: Penampang SVG Komponen MCB -->
         <div class="mcb2-svg-container">
           <svg id="mcb2-svg" viewBox="0 0 340 340" class="mcb2-svg">
@@ -902,10 +1242,10 @@ export function renderMcbMechanismWidget(containerId) {
             <!-- 5. BIMETAL (Thermal Trip) -->
             <g class="mcb-part" id="part-bimetal">
               <rect id="hl-bimetal" x="125" y="125" width="45" height="75" rx="6" fill="none" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="${activeHighlight === 'hl-bimetal' ? 1 : 0}"/>
-              <path d="${isMcbOn && isRunning && (analysis.kind === 'thermal' || analysis.kind === 'caution')
+              <path d="${(isMcbOn && isRunning && (analysis.kind === 'thermal' || analysis.kind === 'caution')) || isTimelapse
                 ? 'M 145 130 Q 162 165 145 195'
                 : 'M 145 130 L 145 195'}"
-                stroke="${isMcbOn && isRunning && (analysis.kind === 'thermal' || analysis.kind === 'caution') ? '#f97316' : '#ea580c'}"
+                stroke="${(isMcbOn && isRunning && (analysis.kind === 'thermal' || analysis.kind === 'caution')) || isTimelapse ? '#f97316' : '#ea580c'}"
                 stroke-width="7" stroke-linecap="round" fill="none"
                 style="transition: all 1.8s ease-in-out;"
               />
@@ -952,67 +1292,9 @@ export function renderMcbMechanismWidget(containerId) {
           </svg>
         </div>
 
-        <!-- Kolom Kanan: Panel Samping (Status, Meter Zona, 3 Steps, Result) -->
+        <!-- Kolom Kanan: Panel Samping (Apa yang terjadi, Kontrol, Detail Teknis) -->
         <div class="mcb2-side-panel">
-          <!-- Badge Status -->
-          <div class="mcb2-status-badge ${isMcbOn ? 'status-on' : 'status-trip'}" id="mcb2-status-badge">
-            <i class="bi ${isMcbOn ? 'bi-check-circle-fill' : 'bi-slash-circle-fill'}"></i>
-            <span id="mcb2-status-badge-txt">${isMcbOn ? `MCB ON — Mengalirkan ${measuredAmps} A` : 'MCB TRIP — Aliran Terputus Aman (0 A)'}</span>
-          </div>
-
-          <!-- Meter Zona Arus Logaritmik -->
-          <div class="mcb2-meter-box">
-            <div class="meter-head">
-              <span class="meter-label"><i class="bi bi-speedometer2"></i> Arus Terukur:</span>
-              <span class="meter-value" id="mcb2-meter-val" style="color: ${meterColor};">
-                ${isMcbOn ? `${measuredAmps} A` : '0 A (TRIP)'}
-              </span>
-            </div>
-
-            <div class="mcb2-zone-meta">
-              <span id="mcb2-meta-load">Beban I = <strong>${loadAmps} A</strong> (${m.toFixed(2)} × In)</span>
-              <span id="mcb2-meta-rating">Rating In = <strong>${ratingIn} A</strong> (${curve})</span>
-            </div>
-
-            <!-- Bar Zona Berwarna -->
-            <div class="mcb2-zone-track">
-              <!-- Zona Aman (hijau) -->
-              <div class="mcb2-zone-seg zone-safe" style="left: 0%; width: ${p113}%;" title="Zona Aman (≤ 1,13 In)"></div>
-              <!-- Zona Waspada (kuning) -->
-              <div class="mcb2-zone-seg zone-caution" style="left: ${p113}%; width: ${Math.max(0, p145 - p113)}%;" title="Zona Waspada (1,13–1,45 In)"></div>
-              <!-- Zona Trip Termal (oranye) -->
-              <div class="mcb2-zone-seg zone-thermal" style="left: ${p145}%; width: ${Math.max(0, pLo - p145)}%;" title="Trip Termal (1,45 In – ${CURVES[curve].lo} In)"></div>
-              <!-- Zona Abu-abu / Transisi (loreng/oranye-merah) -->
-              <div class="mcb2-zone-seg" style="left: ${pLo}%; width: ${Math.max(0, pHi - pLo)}%; background: repeating-linear-gradient(45deg, #f97316, #f97316 4px, #ef4444 4px, #ef4444 8px);" title="Zona Abu-abu Magnetik (${CURVES[curve].lo}–${CURVES[curve].hi} In)"></div>
-              <!-- Zona Trip Magnetik Instan (merah) -->
-              <div class="mcb2-zone-seg zone-magnetic" style="left: ${pHi}%; width: ${Math.max(0, 100 - pHi)}%;" title="Trip Magnetik Instan (≥ ${CURVES[curve].hi} In)"></div>
-
-              <!-- Garis Penanda Skala -->
-              <div class="mcb2-zone-mark" style="left: ${p1}%;"><span class="mcb2-zone-mark-label">In</span></div>
-              <div class="mcb2-zone-mark" style="left: ${p113}%;"><span class="mcb2-zone-mark-label">1,13×</span></div>
-              <div class="mcb2-zone-mark" style="left: ${p145}%;"><span class="mcb2-zone-mark-label">1,45×</span></div>
-              <div class="mcb2-zone-mark" style="left: ${pLo}%;"><span class="mcb2-zone-mark-label">${curve}:${CURVES[curve].lo}×</span></div>
-              <div class="mcb2-zone-mark" style="left: ${pHi}%;"><span class="mcb2-zone-mark-label">${CURVES[curve].hi}×</span></div>
-
-              <!-- Penunjuk ▲ Posisi Arus Beban -->
-              <div class="mcb2-zone-pointer" id="mcb2-zone-pointer" style="left: ${pointerPct}%;">▲</div>
-            </div>
-          </div>
-
-          <!-- Ringkasan Prediksi Cepat -->
-          <div class="mcb2-pred-badge pred-${analysis.kind}" id="mcb2-pred-badge">
-            <span><strong>Karakteristik:</strong> ${
-              analysis.kind === 'off' ? 'OFF (0 A)' :
-              (analysis.kind === 'normal' ? 'Aman (Normal)' :
-              (analysis.kind === 'caution' ? 'Waspada (Beban Lebih Ringan)' :
-              (analysis.kind === 'thermal' ? 'Trip Termal Bimetal' : 'Trip Magnetik Instan Solenoid')))
-            }</span>
-            <span><strong>Estimasi:</strong> ${
-              analysis.kind === 'off' || analysis.kind === 'normal' ? 'Tidak Trip' : formatTime(analysis.timeSec)
-            } ${analysis.grayZone ? '(Zona Abu-abu)' : ''}</span>
-          </div>
-
-          <!-- Daftar 3 Langkah Kejadian -->
+          <!-- Daftar 3 Langkah Kejadian (Tetap Terbuka) -->
           <div class="mcb2-steps-container">
             <div class="steps-title"><i class="bi bi-list-ol"></i> Apa yang terjadi?</div>
             <ul class="mcb2-steps-list" id="mcb2-steps-list">
@@ -1020,11 +1302,23 @@ export function renderMcbMechanismWidget(containerId) {
             </ul>
           </div>
 
-          <!-- Kotak Hasil Analisis -->
-          <div class="mcb2-result-box result-${resultNote.type}" id="mcb2-result-box">
-            <div class="result-title" id="mcb2-result-title"><i class="bi bi-shield-shaded"></i> ${resultNote.title}</div>
-            <div class="result-desc" id="mcb2-result-desc">${resultNote.text}</div>
-          </div>
+          <!-- Tombol Percepat Waktu (Time-lapse) bila caution atau thermal lambat -->
+          ${isTimelapse ? `
+            <div class="mcb2-timelapse-wrap">
+              <button type="button" class="btn-mcb2-timelapse running" disabled>
+                <i class="bi bi-hourglass-split"></i> <span>${virtualTimeText || 'Mempercepat waktu...'}</span>
+              </button>
+            </div>
+          ` : (hasRun && isMcbOn && !isRunning && (analysis.kind === 'caution' || (analysis.kind === 'thermal' && analysis.timeSec > 20)) ? `
+            <div class="mcb2-timelapse-wrap">
+              <button type="button" id="btn-mcb2-timelapse" class="btn-mcb2-timelapse">
+                <i class="bi bi-fast-forward-fill"></i> <span>Percepat Waktu (Time-lapse)</span>
+              </button>
+              <div class="mcb2-timelapse-desc">
+                Lihat MCB trip tanpa menunggu waktu nyata ${formatTime(analysis.timeSec)}.
+              </div>
+            </div>
+          ` : '')}
 
           <!-- Tombol Reset / Re-Arm -->
           <button id="btn-mcb2-reset" class="btn-mcb2-reset">
@@ -1035,33 +1329,149 @@ export function renderMcbMechanismWidget(containerId) {
           <button type="button" id="btn-mcb2-back-ctrl" class="mcb2-back-ctrl">
             <i class="bi bi-sliders"></i> Ubah Pengaturan
           </button>
-        </div>
-      </div>
 
-      <!-- Grafik Kurva Trip Waktu-Arus Log-Log (IEC 60898-1) -->
-      <div class="mcb2-curve-graph-card">
-        <div class="curve-graph-header">
-          <div class="curve-graph-title">
-            <i class="bi bi-graph-up"></i> Karakteristik Waktu-Arus Kurva ${curve} (IEC 60898-1)
-          </div>
-          <span class="curve-graph-legend" id="mcb2-curve-legend">
-            Titik Kerja: <strong>${m.toFixed(2)} × In (${loadAmps} A)</strong> &bull; t = <strong>${analysis.kind === 'normal' || analysis.kind === 'off' ? 'Tidak Trip' : formatTime(analysis.timeSec)}</strong>
-          </span>
-        </div>
-        <div class="curve-graph-svg-wrap">
-          ${renderTripCurveSVG(ratingIn, curve, loadAmps, analysis)}
+          <!-- Bagian Lipat Detail Teknis (Opsional) -->
+          <details class="mcb2-tech-details" ${isTechDetailsOpen ? 'open' : ''}>
+            <summary class="mcb2-tech-summary">
+              <span><i class="bi bi-gear-wide-connected"></i> Detail teknis (opsional)</span>
+              <span class="mcb2-tech-toggle-icon"><i class="bi bi-chevron-down"></i></span>
+            </summary>
+            <div class="mcb2-tech-content">
+              <!-- Meter Zona Arus Logaritmik -->
+              <div class="mcb2-meter-box">
+                <div class="meter-head">
+                  <span class="meter-label"><i class="bi bi-speedometer2"></i> Arus Terukur:</span>
+                  <span class="meter-value" id="mcb2-meter-val" style="color: ${meterColor};">
+                    ${isMcbOn ? `${measuredAmps} A` : '0 A (TRIP)'}
+                  </span>
+                </div>
+
+                <div class="mcb2-zone-meta">
+                  <span id="mcb2-meta-load">Beban I = <strong>${loadAmps} A</strong> (${m.toFixed(2)} × In)</span>
+                  <span id="mcb2-meta-rating">Rating In = <strong>${ratingIn} A</strong> (${curve})</span>
+                </div>
+
+                <!-- Bar Zona Berwarna -->
+                <div class="mcb2-zone-track">
+                  <!-- Zona Aman (hijau) -->
+                  <div class="mcb2-zone-seg zone-safe" style="left: 0%; width: ${p113}%;" title="Zona Aman (≤ 1,13 In)"></div>
+                  <!-- Zona Waspada (kuning) -->
+                  <div class="mcb2-zone-seg zone-caution" style="left: ${p113}%; width: ${Math.max(0, p145 - p113)}%;" title="Zona Waspada (1,13–1,45 In)"></div>
+                  <!-- Zona Trip Termal (oranye) -->
+                  <div class="mcb2-zone-seg zone-thermal" style="left: ${p145}%; width: ${Math.max(0, pLo - p145)}%;" title="Trip Termal (1,45 In – ${CURVES[curve].lo} In)"></div>
+                  <!-- Zona Abu-abu / Transisi (loreng/oranye-merah) -->
+                  <div class="mcb2-zone-seg" style="left: ${pLo}%; width: ${Math.max(0, pHi - pLo)}%; background: repeating-linear-gradient(45deg, #f97316, #f97316 4px, #ef4444 4px, #ef4444 8px);" title="Zona Abu-abu Magnetik (${CURVES[curve].lo}–${CURVES[curve].hi} In)"></div>
+                  <!-- Zona Trip Magnetik Instan (merah) -->
+                  <div class="mcb2-zone-seg zone-magnetic" style="left: ${pHi}%; width: ${Math.max(0, 100 - pHi)}%;" title="Trip Magnetik Instan (≥ ${CURVES[curve].hi} In)"></div>
+
+                  <!-- Garis Penanda Skala -->
+                  <div class="mcb2-zone-mark" style="left: ${p1}%;"><span class="mcb2-zone-mark-label">In</span></div>
+                  <div class="mcb2-zone-mark" style="left: ${p113}%;"><span class="mcb2-zone-mark-label">1,13×</span></div>
+                  <div class="mcb2-zone-mark" style="left: ${p145}%;"><span class="mcb2-zone-mark-label">1,45×</span></div>
+                  <div class="mcb2-zone-mark" style="left: ${pLo}%;"><span class="mcb2-zone-mark-label">${curve}:${CURVES[curve].lo}×</span></div>
+                  <div class="mcb2-zone-mark" style="left: ${pHi}%;"><span class="mcb2-zone-mark-label">${CURVES[curve].hi}×</span></div>
+
+                  <!-- Penunjuk ▲ Posisi Arus Beban -->
+                  <div class="mcb2-zone-pointer" id="mcb2-zone-pointer" style="left: ${pointerPct}%;">▲</div>
+                </div>
+
+                <!-- Legenda Meter Zona Berlabel Terbuka -->
+                <div class="mcb2-zone-legend">
+                  <div class="z-leg-item"><span class="z-dot z-safe"></span><span>Aman (≤ 1,13×)</span></div>
+                  <div class="z-leg-item"><span class="z-dot z-caution"></span><span>Waspada (1,13–1,45×)</span></div>
+                  <div class="z-leg-item"><span class="z-dot z-thermal"></span><span>Trip termal</span></div>
+                  <div class="z-leg-item"><span class="z-dot z-striped"></span><span>Transisi</span></div>
+                  <div class="z-leg-item"><span class="z-dot z-magnetic"></span><span>Trip instan</span></div>
+                </div>
+
+                <!-- Penjelasan Singkat Zona Ambang Batas -->
+                <div class="mcb2-zone-guide-box">
+                  <div class="mcb2-zone-guide-title"><i class="bi bi-info-circle-fill"></i> Ringkasan Ambang Batas Zona:</div>
+                  <ul class="mcb2-zone-guide-list">
+                    <li><strong>&le; 1,13 &times; In:</strong> tidak trip (operasi normal aman).</li>
+                    <li><strong>1,13–1,45 &times; In:</strong> bimetal memanas, trip lambat (bisa lebih dari 1 jam). MCB sengaja memberi toleransi lonjakan wajar sesaat.</li>
+                    <li><strong>&ge; 1,45 &times; In:</strong> trip dalam waktu kurang dari 1 jam untuk mencegah kabel terbakar.</li>
+                    <li><strong>Di atas batas kurva (${curve}: ${CURVES[curve].lo}–${CURVES[curve].hi} &times; In):</strong> trip seketika (&lt; 0,1 detik).</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Ringkasan Prediksi Cepat -->
+              <div class="mcb2-pred-badge pred-${analysis.kind}" id="mcb2-pred-badge">
+                <span><strong>Karakteristik:</strong> ${
+                  analysis.kind === 'off' ? 'OFF (0 A)' :
+                  (analysis.kind === 'normal' ? 'Aman (Normal)' :
+                  (analysis.kind === 'caution' ? 'Waspada (Beban Lebih Ringan)' :
+                  (analysis.kind === 'thermal' ? 'Trip Termal Bimetal' : 'Trip Magnetik Instan Solenoid')))
+                }</span>
+                <span><strong>Estimasi:</strong> ${
+                  analysis.kind === 'off' || analysis.kind === 'normal' ? 'Tidak Trip' : formatTime(analysis.timeSec)
+                } ${analysis.grayZone ? '(Zona Abu-abu)' : ''}</span>
+              </div>
+
+              <!-- Kotak Hasil Analisis -->
+              <div class="mcb2-result-box result-${resultNote.type}" id="mcb2-result-box">
+                <div class="result-title" id="mcb2-result-title"><i class="bi bi-shield-shaded"></i> ${resultNote.title}</div>
+                <div class="result-desc" id="mcb2-result-desc">${resultNote.text}</div>
+              </div>
+
+              <!-- Grafik Kurva Trip Waktu-Arus Log-Log (IEC 60898-1) -->
+              <div class="mcb2-curve-graph-card">
+                <div class="curve-graph-header">
+                  <div class="curve-graph-title">
+                    <i class="bi bi-graph-up"></i> Karakteristik Waktu-Arus Kurva ${curve} (IEC 60898-1)
+                  </div>
+                  <span class="curve-graph-legend" id="mcb2-curve-legend">
+                    Titik Kerja: <strong>${m.toFixed(2)} × In (${loadAmps} A)</strong> &bull; t = <strong>${analysis.kind === 'normal' || analysis.kind === 'off' ? 'Tidak Trip' : formatTime(analysis.timeSec)}</strong>
+                  </span>
+                </div>
+                <div class="curve-graph-svg-wrap">
+                  ${renderTripCurveSVG(ratingIn, curve, loadAmps, analysis)}
+                </div>
+                <div class="mcb2-standards-ref">
+                  <i class="bi bi-journal-check"></i>
+                  <span>Karakteristik trip mengacu IEC 60898-1 (SNI IEC 60898-1). Pemasangan dan pemilihan proteksi mengacu PUIL (SNI 0225).</span>
+                </div>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
     `;
+
+    // Pasang listener toggle pada details agar menyimpan state buka/tutup
+    const detailsEl = dynContainer.querySelector('.mcb2-tech-details');
+    if (detailsEl) {
+      detailsEl.addEventListener('toggle', () => {
+        isTechDetailsOpen = detailsEl.open;
+      });
+    }
   }
 
   // Initial Setup: Bangun kontainer pembungkus, panel kontrol, dan stage dinamis
   container.innerHTML = `
     <div class="mcb2-wrapper">
-      <div class="mcb2-instruction-box">
-        <i class="bi bi-info-circle-fill"></i>
-        <span>Atur <strong>Rating (In)</strong>, <strong>Kurva Trip</strong>, dan <strong>Arus Beban (I)</strong>, lalu klik <strong>Jalankan Simulasi</strong> untuk mengamati respons proteksi MCB.</span>
+      <!-- 1. Alur bernomor di atas widget -->
+      <div class="mcb2-flow-guide">
+        <div class="mcb2-flow-guide-title">
+          <i class="bi bi-compass"></i> Alur Praktikum MCB
+        </div>
+        <div class="mcb2-flow-steps">
+          <div class="mcb2-flow-step">
+            <span class="mcb2-step-badge">1</span>
+            <span class="mcb2-step-lbl"><strong>Pilih MCB</strong> (Rating & Kurva)</span>
+          </div>
+          <div class="mcb2-flow-step">
+            <span class="mcb2-step-badge">2</span>
+            <span class="mcb2-step-lbl"><strong>Tentukan Arus</strong> (Slider / Preset)</span>
+          </div>
+          <div class="mcb2-flow-step">
+            <span class="mcb2-step-badge">3</span>
+            <span class="mcb2-step-lbl"><strong>Jalankan Simulasi</strong> & amati responsnya</span>
+          </div>
+        </div>
       </div>
+
       <div id="mcb2-controls"></div>
       <div id="mcb2-dynamic"></div>
       <p class="mcb-widget-caption" style="margin-top: 14px;">
@@ -1069,6 +1479,17 @@ export function renderMcbMechanismWidget(containerId) {
       </p>
       <div class="mcb2-footnote">
         Estimasi edukatif berdasarkan karakteristik IEC 60898-1. Waktu trip nyata bergantung pada produk dan suhu kerja.
+      </div>
+
+      <!-- Modal Penjelasan Istilah (In / Kurva) Ramah Sentuh HP -->
+      <div id="mcb2-info-overlay" class="mcb2-info-overlay" style="display: none;" role="dialog" aria-modal="true">
+        <div class="mcb2-info-modal">
+          <div class="mcb2-info-modal-head">
+            <h4 class="mcb2-info-modal-title" id="mcb2-info-title">Penjelasan</h4>
+            <button type="button" class="mcb2-info-modal-close" id="btn-mcb2-close-info" aria-label="Tutup">&times;</button>
+          </div>
+          <div class="mcb2-info-modal-content" id="mcb2-info-body"></div>
+        </div>
       </div>
     </div>
   `;
@@ -1083,12 +1504,19 @@ export function renderMcbMechanismWidget(containerId) {
         scrollToControls();
         return;
       }
+      const timeLapseBtn = e.target.closest('#btn-mcb2-timelapse');
+      if (timeLapseBtn) {
+        const curAnalysis = analyzeTrip(ratingIn, curve, loadAmps);
+        runTimelapse(curAnalysis);
+        return;
+      }
       const resetBtn = e.target.closest('#btn-mcb2-reset');
       if (resetBtn) {
         playUIClick();
         clearAllTimers();
         isMcbOn = true;
         isRunning = false;
+        hasRun = false;
         measuredAmps = loadAmps;
         activeHighlight = 'hl-contacts';
         updatePredictionState();
@@ -1103,6 +1531,16 @@ export function renderMcbMechanismWidget(containerId) {
     });
   }
 
+  // Listener Modal Info Overlay
+  const infoOverlay = container.querySelector('#mcb2-info-overlay');
+  if (infoOverlay) {
+    infoOverlay.addEventListener('click', e => {
+      if (e.target === infoOverlay || e.target.closest('#btn-mcb2-close-info')) {
+        hideInfoModal();
+      }
+    });
+  }
+
   // Pause flow line saat tab tidak terlihat untuk hemat baterai/CPU di mobile
   let _docAC = new AbortController();
   const handleVisibilityChange = () => {
@@ -1112,6 +1550,13 @@ export function renderMcbMechanismWidget(containerId) {
     });
   };
   document.addEventListener('visibilitychange', handleVisibilityChange, { signal: _docAC.signal });
+
+  const handleKeyDown = e => {
+    if (e.key === 'Escape') {
+      hideInfoModal();
+    }
+  };
+  document.addEventListener('keydown', handleKeyDown, { signal: _docAC.signal });
 
   // Observer pembersihan otomatis saat container dilepas dari DOM
   const observer = new MutationObserver(() => {

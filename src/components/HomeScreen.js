@@ -1,4 +1,4 @@
-import { navigate } from '../main.js';
+import { navigate, state } from '../main.js';
 import { playUIClick } from '../utils/audioFeedback.js';
 
 export function renderHomeScreen() {
@@ -91,22 +91,27 @@ export function renderHomeScreen() {
   // Attach navigation event listeners
   document.getElementById('card-materi').addEventListener('click', () => {
     playUIClick();
+    state.lastOpenedItemId = 'card-materi';
     navigate('materi');
   });
   document.getElementById('card-jobsheet').addEventListener('click', () => {
     playUIClick();
+    state.lastOpenedItemId = 'card-jobsheet';
     navigate('jobsheet');
   });
   document.getElementById('card-free').addEventListener('click', () => {
     playUIClick();
+    state.lastOpenedItemId = 'card-free';
     navigate('canvas_free');
   });
   document.getElementById('card-troubleshoot').addEventListener('click', () => {
     playUIClick();
+    state.lastOpenedItemId = 'card-troubleshoot';
     navigate('troubleshoot');
   });
   document.getElementById('card-settings').addEventListener('click', () => {
     playUIClick();
+    state.lastOpenedItemId = 'card-settings';
     navigate('settings');
   });
 }

@@ -575,8 +575,7 @@ export function renderJobsheetView() {
   }
 
   // ─── Validation Result Dialog Modal Helper ──────────────────────────────────
-  // ─── Validation Result Dialog Modal Helper ──────────────────────────────────
-  function showValidationResultDialog({ success, variant, title, message, errorAlerts = [], jobsheetTitle = '', confirmText, onFix, onNext }) {
+  function showValidationResultDialog({ success, variant, title, message, errorAlerts = [], jobsheetTitle = '', confirmText, onFix }) {
     // Remove any existing dialog first (avoid duplicate popups)
     const existing = document.getElementById('validation-result-overlay');
     if (existing) {
@@ -634,11 +633,6 @@ export function renderJobsheetView() {
             <button id="vr-btn-close" class="vr-btn-secondary">
               <i class="bi bi-x-lg"></i> ${confirmText || 'Tutup'}
             </button>
-            ${onNext ? `
-              <button id="vr-btn-next" class="vr-btn-primary-success">
-                <i class="bi bi-arrow-right-circle-fill"></i> Lanjut ke Jobsheet Berikutnya
-              </button>
-            ` : ''}
           </div>
         </div>
       `;
@@ -771,19 +765,9 @@ export function renderJobsheetView() {
       });
     }
 
-    // Next Jobsheet button (Lulus)
-    const btnNext = overlay.querySelector('#vr-btn-next');
-    if (btnNext) {
-      btnNext.addEventListener('click', () => {
-        playUIClick();
-        closeDialog();
-        if (onNext) onNext();
-      });
-    }
-
     // Auto focus primary button
     setTimeout(() => {
-      const primaryBtn = btnNext || btnFix || btnClose;
+      const primaryBtn = btnFix || btnClose;
       if (primaryBtn) primaryBtn.focus();
     }, 50);
   }
@@ -885,12 +869,6 @@ export function renderJobsheetView() {
       // Re-render canvas alerts, visual markers, AND validation status box
       updateState({ canvas: state.canvas });
 
-      // Determine next jobsheet if available
-      const currentIndex = jobsheetData.findIndex(j => j.id === state.activeJobsheetId);
-      const nextJs = (currentIndex !== -1 && currentIndex < jobsheetData.length - 1)
-        ? jobsheetData[currentIndex + 1]
-        : null;
-
       // Show Validation Result Modal Popup
       showValidationResultDialog({
         success: passed,
@@ -899,10 +877,7 @@ export function renderJobsheetView() {
         jobsheetTitle: js ? js.title : '',
         onFix: () => {
           // close popup, canvas tetap menampilkan highlight error
-        },
-        onNext: nextJs ? () => {
-          navigate('jobsheet', { jobsheetId: nextJs.id });
-        } : null
+        }
       });
     });
   }

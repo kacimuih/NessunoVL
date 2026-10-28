@@ -291,9 +291,9 @@ export function renderJobsheetView() {
     playUIClick();
     document.body.classList.remove('canvas-active');
     if (isFreeMode) {
-      navigate('home');
+      navigate('home', { restoreScroll: true });
     } else {
-      updateState({ activeJobsheetId: null }); // Go back to list selection
+      navigate('jobsheet', { restoreScroll: true });
     }
   });
 
@@ -1070,13 +1070,14 @@ function renderJobsheetSelectionList(container) {
   // Add click events
   document.getElementById('btn-back-home').addEventListener('click', () => {
     playUIClick();
-    navigate('home');
+    navigate('home', { restoreScroll: true });
   });
 
   jobsheetData.forEach(js => {
     document.getElementById(`card-${js.id}`).addEventListener('click', () => {
       playUIClick();
-      updateState({ activeJobsheetId: js.id });
+      state.lastOpenedItemId = js.id;
+      navigate('jobsheet', { jobsheetId: js.id });
     });
   });
 }

@@ -60,6 +60,23 @@ export function renderComponentDetailPage(detailId) {
   const partsImgSrc = item.detail && item.detail.partsImagePath ? resolveAssetUrl(item.detail.partsImagePath) : null;
   const parts = item.detail && item.detail.parts ? item.detail.parts : [];
   const detailItems = item.detail && item.detail.items ? item.detail.items : [];
+  const sections = item.detail && item.detail.sections ? item.detail.sections : [];
+  const renderSection = s => `
+  <section class="detail-section">
+    <h2><i class="bi ${s.icon || 'bi-journal-text'}" style="margin-right: 8px; color: var(--accent-color);"></i>${s.heading}</h2>
+    <div class="detail-content">
+      ${(s.paragraphs || []).map(p => `<p class="detail-p">${p}</p>`).join('')}
+      ${s.figure ? `
+        <figure class="detail-figure">
+          <img src="${resolveAssetUrl(s.figure.src)}" alt="${s.figure.alt}" loading="lazy" decoding="async"
+               width="${s.figure.width || 720}" height="${s.figure.height || 400}"
+               onerror="this.parentElement.style.display='none'"/>
+          <figcaption>${s.figure.caption || ''}</figcaption>
+        </figure>` : ''}
+      ${s.items && s.items.length ? `<ul class="detail-list">${s.items.map(it => `<li>${it}</li>`).join('')}</ul>` : ''}
+      ${s.callout ? `<div class="detail-callout"><strong>${s.callout.title}</strong><p>${s.callout.text}</p></div>` : ''}
+    </div>
+  </section>`;
 
   app.innerHTML = `
     <nav class="navbar">
@@ -96,6 +113,8 @@ export function renderComponentDetailPage(detailId) {
           ` : ''}
         </div>
       </section>
+
+      ${sections.map(renderSection).join('')}
 
       ${partsImgSrc || parts.length ? `
       <section class="detail-section">

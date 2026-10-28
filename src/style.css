@@ -3256,6 +3256,72 @@ body.theme-light .tut-card:hover {
   box-shadow: var(--shadow-sm);
 }
 
+/* MCB Flow Guide (Alur Bernomor di Atas Widget) */
+.mcb2-flow-guide {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.mcb2-flow-guide-title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.mcb2-flow-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .mcb2-flow-steps {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.mcb2-flow-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.mcb2-step-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mcb2-step-lbl {
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+.mcb2-step-lbl strong {
+  color: var(--text-primary);
+}
+
 .mcb2-instruction-box {
   display: flex;
   align-items: flex-start;
@@ -3304,6 +3370,55 @@ body.theme-light .tut-card:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.mcb2-block-tag {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.mcb2-title-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mcb2-field-desc {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  margin-top: -4px;
+  margin-bottom: 2px;
+}
+
+.mcb2-field-desc span {
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+.mcb2-info-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent-color);
+  font-size: 0.88rem;
+  padding: 0 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: 4px;
+  transition: transform 0.15s ease, color 0.15s ease;
+  touch-action: manipulation;
+}
+
+.mcb2-info-btn:hover {
+  transform: scale(1.2);
+  color: #fbbf24;
 }
 
 .mcb2-ctrl-title {
@@ -3357,7 +3472,7 @@ body.theme-light .tut-card:hover {
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
 }
 
-/* Preset Ringkas (3 Kolom) */
+/* Preset Ringkas (3 Kolom dengan subteks) */
 .mcb2-preset-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3366,9 +3481,9 @@ body.theme-light .tut-card:hover {
 .mcb2-chip-preset {
   flex-direction: column;
   gap: 2px;
-  min-height: 52px;
+  min-height: 60px;
   padding: 6px 4px;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: center;
 }
 .mcb2-chip-preset .p-name {
@@ -3377,13 +3492,60 @@ body.theme-light .tut-card:hover {
   overflow-wrap: normal;
   word-break: normal;
 }
-.mcb2-chip-preset .p-val {
-  font-size: 0.7rem;
-  font-weight: 600;
+.mcb2-chip-preset .p-desc {
+  font-size: 0.65rem;
+  line-height: 1.15;
   color: var(--text-muted);
+  font-weight: 500;
+}
+.mcb2-chip-preset .p-val {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+.mcb2-chip-preset:hover .p-desc {
+  color: var(--text-secondary);
 }
 .mcb2-chip-preset:hover .p-val {
+  color: #fbbf24;
+}
+
+/* Tips Beban Ringan 1,3x In */
+.mcb2-tip-row {
+  margin-top: 4px;
+}
+.mcb2-tip-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
   color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+  touch-action: manipulation;
+}
+.mcb2-tip-chip .bi {
+  color: #fbbf24;
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+.mcb2-tip-chip strong {
+  color: #fbbf24;
+}
+.mcb2-tip-chip:hover {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
 }
 
 #ctrl-amps-num {
@@ -3483,6 +3645,19 @@ body.theme-light .tut-card:hover {
   transform: translateY(0);
 }
 
+.btn-mcb2-run .btn-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.2);
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 /* Zone Meter & Scale */
 .mcb2-zone-meta {
   display: flex;
@@ -3547,6 +3722,73 @@ body.theme-light .tut-card:hover {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
   transition: left 0.15s ease;
   pointer-events: none;
+}
+
+/* Legenda Meter Zona Berlabel Terbuka */
+.mcb2-zone-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.z-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.z-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.z-safe { background: #10b981; }
+.z-caution { background: #eab308; }
+.z-thermal { background: #f97316; }
+.z-striped { background: repeating-linear-gradient(45deg, #f97316, #f97316 2px, #ef4444 2px, #ef4444 4px); }
+.z-magnetic { background: #ef4444; }
+
+/* Panduan Ambang Batas Zona MCB */
+.mcb2-zone-guide-box {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.mcb2-zone-guide-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.mcb2-zone-guide-title .bi {
+  color: var(--accent-color);
+  font-size: 0.85rem;
+}
+.mcb2-zone-guide-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mcb2-zone-guide-list strong {
+  color: var(--text-primary);
 }
 
 .mcb2-pred-badge {
@@ -3654,6 +3896,24 @@ body.theme-light .tut-card:hover {
   display: block;
 }
 
+.mcb2-standards-ref {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-color);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mcb2-standards-ref .bi {
+  color: var(--accent-color);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
 /* 3 Skenario Buttons */
 .mcb2-scenarios {
   display: grid;
@@ -3743,6 +4003,81 @@ body.theme-light .tut-card:hover {
   }
 }
 
+.mcb2-stage-top {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.mcb2-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+  border: 1.5px solid transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.mcb2-summary-card .bi {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.mcb2-summary-card.summary-idle {
+  background: rgba(100, 116, 139, 0.15);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: var(--text-primary);
+}
+.mcb2-summary-card.summary-idle .bi {
+  color: var(--accent-color);
+}
+
+.mcb2-summary-card.summary-safe {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #34d399;
+}
+.mcb2-summary-card.summary-safe .bi {
+  color: #10b981;
+}
+
+.mcb2-summary-card.summary-warning {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+.mcb2-summary-card.summary-warning .bi {
+  color: #f59e0b;
+}
+
+.mcb2-summary-card.summary-danger {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: #ef4444;
+  color: #f87171;
+}
+.mcb2-summary-card.summary-danger .bi {
+  color: #ef4444;
+}
+
+[data-theme="light"] .mcb2-summary-card.summary-safe {
+  background: rgba(16, 185, 129, 0.12);
+  color: #065f46;
+}
+[data-theme="light"] .mcb2-summary-card.summary-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+}
+[data-theme="light"] .mcb2-summary-card.summary-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #991b1b;
+}
+
 .mcb2-svg-container {
   display: flex;
   justify-content: center;
@@ -3807,10 +4142,31 @@ body.theme-light .tut-card:hover {
   color: #34d399;
 }
 
+.mcb2-status-badge.status-caution {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid #f59e0b;
+  color: #fbbf24;
+}
+
+[data-theme="light"] .mcb2-status-badge.status-caution {
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+}
+
 .mcb2-status-badge.status-trip {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid #ef4444;
   color: #f87171;
+}
+
+.mcb2-status-badge.status-idle {
+  background: rgba(100, 116, 139, 0.15);
+  border: 1px solid #64748b;
+  color: var(--text-secondary);
+}
+
+.mcb2-status-badge.status-idle .bi {
+  color: var(--text-muted);
 }
 
 /* Meter Arus Real-Time */
@@ -4004,6 +4360,69 @@ body.theme-light .tut-card:hover {
   color: #a7f3d0;
 }
 
+/* Tombol Percepat Waktu (Time-lapse) */
+.mcb2-timelapse-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-mcb2-timelapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(234, 88, 12, 0.22));
+  border: 1.5px solid #f59e0b;
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+  touch-action: manipulation;
+}
+
+.btn-mcb2-timelapse:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(234, 88, 12, 0.35));
+  border-color: #fbbf24;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-mcb2-timelapse:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-mcb2-timelapse:disabled,
+.btn-mcb2-timelapse.running {
+  cursor: wait;
+  opacity: 0.9;
+  border-style: dashed;
+  animation: pulse-timelapse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-timelapse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+  }
+}
+
+.mcb2-timelapse-desc {
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  text-align: center;
+}
+
 /* Tombol Reset Baru */
 .btn-mcb2-reset {
   display: flex;
@@ -4055,6 +4474,148 @@ body.theme-light .tut-card:hover {
     border-color: var(--accent-color);
     color: var(--accent-color);
   }
+}
+
+/* Akordeon Detail Teknis (Opsional) */
+.mcb2-tech-details {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.mcb2-tech-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.08);
+  list-style: none;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.mcb2-tech-summary::-webkit-details-marker {
+  display: none;
+}
+
+.mcb2-tech-summary:hover {
+  color: var(--text-primary);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.mcb2-tech-toggle-icon {
+  font-size: 0.82rem;
+  transition: transform 0.25s ease;
+  display: flex;
+  align-items: center;
+}
+
+.mcb2-tech-details[open] .mcb2-tech-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.mcb2-tech-content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Modal Overlay Penjelasan Istilah */
+@keyframes mcbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mcbScaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.mcb2-info-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(3px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: mcbFadeIn 0.15s ease-out;
+}
+
+.mcb2-info-modal {
+  background: var(--bg-primary);
+  border: 1.5px solid var(--accent-color);
+  border-radius: var(--radius-md);
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: mcbScaleUp 0.18s ease-out;
+}
+
+.mcb2-info-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mcb2-info-modal-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mcb2-info-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.15s ease;
+}
+
+.mcb2-info-modal-close:hover {
+  color: #ef4444;
+}
+
+.mcb2-info-modal-content {
+  padding: 16px;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.mcb2-info-modal-content p {
+  margin-bottom: 10px;
+}
+
+.mcb2-info-modal-content p:last-child {
+  margin-bottom: 0;
+}
+
+.mcb2-info-modal-content strong {
+  color: var(--text-primary);
 }
 
 /* ==========================================================================
