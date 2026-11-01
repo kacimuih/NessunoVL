@@ -56,23 +56,30 @@ export function renderComponentDetailPage(detailId) {
     return;
   }
 
-  const imgSrc = item.imagePath || '';
+  const imgSrc = item.imagePath ? resolveAssetUrl(item.imagePath) : '';
+  const symClass = item.symbol ? (item.symbol.startsWith('bi-') ? item.symbol : `bi-${item.symbol}`) : '';
   const partsImgSrc = item.detail && item.detail.partsImagePath ? resolveAssetUrl(item.detail.partsImagePath) : null;
   const parts = item.detail && item.detail.parts ? item.detail.parts : [];
   const detailItems = item.detail && item.detail.items ? item.detail.items : [];
   const sections = item.detail && item.detail.sections ? item.detail.sections : [];
+
+  const renderFigure = fig => {
+    if (!fig || !fig.src) return '';
+    return `
+      <figure class="detail-figure">
+        <img src="${resolveAssetUrl(fig.src)}" alt="${fig.alt || ''}" loading="lazy" decoding="async"
+             width="${fig.width || 720}" height="${fig.height || 400}"
+             onerror="this.parentElement.style.display='none'"/>
+        <figcaption>${fig.caption || ''}</figcaption>
+      </figure>`;
+  };
+
   const renderSection = s => `
   <section class="detail-section">
     <h2><i class="bi ${s.icon || 'bi-journal-text'}" style="margin-right: 8px; color: var(--accent-color);"></i>${s.heading}</h2>
     <div class="detail-content">
       ${(s.paragraphs || []).map(p => `<p class="detail-p">${p}</p>`).join('')}
-      ${s.figure ? `
-        <figure class="detail-figure">
-          <img src="${resolveAssetUrl(s.figure.src)}" alt="${s.figure.alt}" loading="lazy" decoding="async"
-               width="${s.figure.width || 720}" height="${s.figure.height || 400}"
-               onerror="this.parentElement.style.display='none'"/>
-          <figcaption>${s.figure.caption || ''}</figcaption>
-        </figure>` : ''}
+      ${renderFigure(s.figure)}
       ${s.items && s.items.length ? `<ul class="detail-list">${s.items.map(it => `<li>${it}</li>`).join('')}</ul>` : ''}
       ${s.callout ? `<div class="detail-callout"><strong>${s.callout.title}</strong><p>${s.callout.text}</p></div>` : ''}
     </div>
@@ -97,7 +104,7 @@ export function renderComponentDetailPage(detailId) {
       </button>
 
       <div class="detail-hero">
-        ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" class="detail-hero-img" fetchpriority="high" decoding="async" width="200" height="180" onerror="this.style.display='none'"/>` : ''}
+        ${imgSrc ? `<img src="${imgSrc}" alt="${item.name}" class="detail-hero-img" fetchpriority="high" decoding="async" width="200" height="180" onerror="this.style.display='none'"/>` : (symClass ? `<div class="detail-hero-icon" aria-hidden="true"><i class="bi ${symClass}"></i></div>` : '')}
         <h1>${item.name}</h1>
         <p class="detail-summary">${item.desc}</p>
       </div>
@@ -106,6 +113,7 @@ export function renderComponentDetailPage(detailId) {
         <h2><i class="bi bi-gear-wide-connected" style="margin-right: 8px; color: var(--accent-color);"></i>Penjelasan & Teori</h2>
         <div class="detail-content">
           ${item.detail.content ? `<p style="line-height: 1.6; margin-bottom: 12px;">${item.detail.content}</p>` : ''}
+          ${renderFigure(item.detail && item.detail.figure)}
           ${detailItems.length ? `
             <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-secondary);">
               ${detailItems.map(it => `<li style="margin-bottom: 8px;">${it}</li>`).join('')}

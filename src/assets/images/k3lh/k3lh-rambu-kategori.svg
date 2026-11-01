@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" width="100%" height="100%" role="img" aria-labelledby="t-rambu d-rambu" font-family="Arial, Helvetica, sans-serif">
+  <title id="t-rambu">Empat Kategori Utama Rambu K3 Kelistrikan (ISO 7010 &amp; SNI)</title>
+  <desc id="d-rambu">Panduan 4 kategori rambu keselamatan listrik: Peringatan (kuning segitiga), Larangan (merah lingkaran bergaris diagonal), Kewajiban (biru lingkaran), dan Kondisi Aman (hijau persegi).</desc>
+
+  <!-- Latar Belakang -->
+  <rect width="720" height="300" rx="16" fill="#1e293b"/>
+
+  <!-- Judul & Subjudul -->
+  <text x="360" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#f8fafc">Standar Kategori Rambu Keselamatan Listrik (K3LH)</text>
+  <text x="360" y="47" text-anchor="middle" font-size="11" fill="#94a3b8">Berdasarkan Standar ISO 7010 &amp; PUIL: Identifikasi Bentuk Geometris &bull; Warna Keselamatan &bull; Piktogram</text>
+
+  <!-- ==================== KOLOM 1: RAMBU PERINGATAN ==================== -->
+  <g id="col-peringatan">
+    <rect x="22" y="62" width="154" height="224" rx="10" fill="#0f172a" stroke="#f59e0b" stroke-width="1.8"/>
+    <!-- Header Badge -->
+    <rect x="30" y="70" width="138" height="22" rx="5" fill="rgba(245,158,11,0.18)" stroke="#f59e0b" stroke-width="1"/>
+    <text x="99" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#fbbf24" letter-spacing="0.4">1. PERINGATAN</text>
+
+    <!-- Simbol: Segitiga Kuning Kilat Listrik -->
+    <g transform="translate(99, 126)">
+      <!-- Segitiga Kuning dengan Tepi Hitam -->
+      <polygon points="0,-28 28,20 -28,20" fill="#fbbf24" stroke="#000000" stroke-width="3" stroke-linejoin="round"/>
+      <!-- Piktogram Kilat Petir Hitam -->
+      <path d="M-2 -16 L-8 0 H2 L-4 14 L10 -4 H0 L6 -16 Z" fill="#000000"/>
+    </g>
+
+    <!-- Informasi Bentuk & Warna -->
+    <text x="99" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#fde68a">Segitiga Kuning</text>
+    <text x="99" y="200" text-anchor="middle" font-size="10" fill="#94a3b8">Potensi Bahaya / Waspada</text>
+
+    <!-- Contoh Kelistrikan -->
+    <rect x="30" y="214" width="138" height="36" rx="5" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="99" y="228" text-anchor="middle" font-size="9" fill="#94a3b8">Contoh di Bengkel:</text>
+    <text x="99" y="242" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fde047">Awas Tegangan Listrik</text>
+
+    <!-- Footer Tag -->
+    <rect x="30" y="256" width="138" height="20" rx="4" fill="rgba(245,158,11,0.12)"/>
+    <text x="99" y="270" text-anchor="middle" font-size="9" font-weight="700" fill="#fbbf24">Awas Bahaya</text>
+  </g>
+
+  <!-- ==================== KOLOM 2: RAMBU LARANGAN ==================== -->
+  <g id="col-larangan">
+    <rect x="198" y="62" width="154" height="224" rx="10" fill="#0f172a" stroke="#ef4444" stroke-width="1.8"/>
+    <!-- Header Badge -->
+    <rect x="206" y="70" width="138" height="22" rx="5" fill="rgba(239,68,68,0.18)" stroke="#ef4444" stroke-width="1"/>
+    <text x="275" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#f87171" letter-spacing="0.4">2. LARANGAN</text>
+
+    <!-- Simbol: Lingkaran Merah Bergaris Diagonal (Sakelar Dilarang) -->
+    <g transform="translate(275, 126)">
+      <!-- Lingkaran Putih Dasar -->
+      <circle cx="0" cy="0" r="26" fill="#ffffff"/>
+      <!-- Ikon Sakelar / Tangan di dalam -->
+      <rect x="-8" y="-12" width="16" height="24" rx="3" fill="#334155"/>
+      <circle cx="0" cy="-4" r="3" fill="#cbd5e1"/>
+      <rect x="-3" y="0" width="6" height="8" rx="1" fill="#ef4444"/>
+      <!-- Tepi Merah & Garis Diagonal -->
+      <circle cx="0" cy="0" r="24" fill="none" stroke="#dc2626" stroke-width="5"/>
+      <line x1="-17" y1="-17" x2="17" y2="17" stroke="#dc2626" stroke-width="5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Informasi Bentuk & Warna -->
+    <text x="275" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#fca5a5">Lingkaran Merah</text>
+    <text x="275" y="200" text-anchor="middle" font-size="10" fill="#94a3b8">Garis Diagonal Merah</text>
+
+    <!-- Contoh Kelistrikan -->
+    <rect x="206" y="214" width="138" height="36" rx="5" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="275" y="228" text-anchor="middle" font-size="9" fill="#94a3b8">Contoh di Bengkel:</text>
+    <text x="275" y="242" text-anchor="middle" font-size="9" font-weight="700" fill="#f87171">Dilarang Menyalakan</text>
+
+    <!-- Footer Tag -->
+    <rect x="206" y="256" width="138" height="20" rx="4" fill="rgba(239,68,68,0.12)"/>
+    <text x="275" y="270" text-anchor="middle" font-size="9" font-weight="700" fill="#f87171">Jangan Dilakukan</text>
+  </g>
+
+  <!-- ==================== KOLOM 3: RAMBU KEWAJIBAN ==================== -->
+  <g id="col-kewajiban">
+    <rect x="374" y="62" width="154" height="224" rx="10" fill="#0f172a" stroke="#3b82f6" stroke-width="1.8"/>
+    <!-- Header Badge -->
+    <rect x="382" y="70" width="138" height="22" rx="5" fill="rgba(59,130,246,0.18)" stroke="#3b82f6" stroke-width="1"/>
+    <text x="451" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#60a5fa" letter-spacing="0.4">3. KEWAJIBAN</text>
+
+    <!-- Simbol: Lingkaran Biru dengan Sarung Tangan Putih -->
+    <g transform="translate(451, 126)">
+      <!-- Lingkaran Biru Penuh -->
+      <circle cx="0" cy="0" r="26" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5"/>
+      <!-- Piktogram Sarung Tangan Putih -->
+      <path d="M-10 14 C-10 8 -9 2 -7 -4 C-11 -3 -14 0 -15 -3 C-16 -6 -12 -9 -7 -9 C-6 -9 -6 -11 -6 -18 C-6 -21 -2 -21 -2 -18 L-2 -10 L0 -20 C0 -23 4 -23 4 -20 L4 -10 L6 -19 C6 -22 10 -22 10 -19 L10 -10 L12 -14 C12 -17 16 -17 16 -14 C16 -8 14 6 10 14 Z" fill="#ffffff"/>
+      <rect x="-9" y="13" width="19" height="3" rx="1" fill="#cbd5e1"/>
+    </g>
+
+    <!-- Informasi Bentuk & Warna -->
+    <text x="451" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#93c5fd">Lingkaran Biru</text>
+    <text x="451" y="200" text-anchor="middle" font-size="10" fill="#94a3b8">Wajib Ditaati / Pakai APD</text>
+
+    <!-- Contoh Kelistrikan -->
+    <rect x="382" y="214" width="138" height="36" rx="5" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="451" y="228" text-anchor="middle" font-size="9" fill="#94a3b8">Contoh di Bengkel:</text>
+    <text x="451" y="242" text-anchor="middle" font-size="9" font-weight="700" fill="#60a5fa">Wajib Sarung Tangan</text>
+
+    <!-- Footer Tag -->
+    <rect x="382" y="256" width="138" height="20" rx="4" fill="rgba(59,130,246,0.12)"/>
+    <text x="451" y="270" text-anchor="middle" font-size="9" font-weight="700" fill="#93c5fd">Perintah Wajib</text>
+  </g>
+
+  <!-- ==================== KOLOM 4: KONDISI AMAN ==================== -->
+  <g id="col-aman">
+    <rect x="550" y="62" width="150" height="224" rx="10" fill="#0f172a" stroke="#10b981" stroke-width="1.8"/>
+    <!-- Header Badge -->
+    <rect x="556" y="70" width="138" height="22" rx="5" fill="rgba(16,185,129,0.18)" stroke="#10b981" stroke-width="1"/>
+    <text x="625" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#34d399" letter-spacing="0.4">4. KONDISI AMAN</text>
+
+    <!-- Simbol: Kotak Hijau dengan Orang Lari / Pintu Evakuasi -->
+    <g transform="translate(625, 126)">
+      <!-- Kotak Hijau Persegi -->
+      <rect x="-24" y="-24" width="48" height="48" rx="6" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+      <!-- Pintu Keluar Putih -->
+      <rect x="8" y="-16" width="10" height="32" rx="1" fill="#ffffff"/>
+      <!-- Figur Orang Berlari Putih -->
+      <circle cx="-5" cy="-12" r="3" fill="#ffffff"/>
+      <path d="M-6 -7 L-2 -1 L5 -3 L2 5 L-3 10 L-7 3 L-9 8" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M-5 -2 L-10 -7 L-14 -4" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+
+    <!-- Informasi Bentuk & Warna -->
+    <text x="625" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#a7f3d0">Persegi Hijau</text>
+    <text x="625" y="200" text-anchor="middle" font-size="10" fill="#94a3b8">Jalur Evakuasi &amp; P3K</text>
+
+    <!-- Contoh Kelistrikan -->
+    <rect x="556" y="214" width="138" height="36" rx="5" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <text x="625" y="228" text-anchor="middle" font-size="9" fill="#94a3b8">Contoh di Bengkel:</text>
+    <text x="625" y="242" text-anchor="middle" font-size="9" font-weight="700" fill="#34d399">Pintu Keluar Darurat</text>
+
+    <!-- Footer Tag -->
+    <rect x="556" y="256" width="138" height="20" rx="4" fill="rgba(16,185,129,0.12)"/>
+    <text x="625" y="270" text-anchor="middle" font-size="9" font-weight="700" fill="#a7f3d0">Penyelamatan</text>
+  </g>
+</svg>

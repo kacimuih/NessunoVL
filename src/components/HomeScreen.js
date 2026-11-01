@@ -15,7 +15,7 @@ export function renderHomeScreen() {
         <p>Media Pendamping Pembelajaran Praktik Kelistrikan Interaktif Kelas XI TITL</p>
       </header>
 
-      <main class="home-grid">
+      <main class="home-grid home-menu-grid">
         <!-- Card 1: Materi -->
         <div class="menu-card" id="card-materi">
           <div class="menu-card-icon"><i class="bi bi-book"></i></div>

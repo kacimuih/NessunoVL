@@ -16,7 +16,7 @@ export const materiData = {
           {
             name: "Pengertian dan Tujuan K3LH",
             desc: "Upaya perlindungan agar tenaga kerja dan sumber energi listrik dapat digunakan secara aman.",
-            symbol: "bi-book-fill",
+            symbol: "bi-info-circle",
             detailId: "k3lh_pengertian",
             detail: {
               content: "K3LH (Keselamatan, Kesehatan Kerja, dan Lingkungan Hidup) dalam kelistrikan adalah suatu upaya perlindungan untuk menjamin agar setiap tenaga kerja/siswa dan orang lain di tempat kerja selalu dalam keadaan selamat dan sehat, serta agar setiap sumber produksi (energi listrik) dapat digunakan secara aman dan efisien. Tujuan utamanya adalah mencegah kecelakaan kerja akibat sengatan listrik, kebakaran akibat hubung singkat, serta penyakit akibat kerja.",
@@ -106,6 +106,13 @@ export const materiData = {
             detailId: "k3lh_apd",
             detail: {
               content: "Dalam praktikum atau pekerjaan listrik, wajib mengenakan APD standar berikut:",
+              figure: {
+                src: "src/assets/images/k3lh/k3lh-apd-wajib.svg",
+                alt: "Empat APD wajib kelistrikan: sarung tangan isolasi, sepatu safety, kacamata pelindung, dan helm pelindung",
+                caption: "Gambar. APD wajib pada pekerjaan listrik.",
+                width: 720,
+                height: 380
+              },
               items: [
                 "<strong>Sarung Tangan Isolasi (Insulated Gloves)</strong>: Melindungi tangan dari sentuhan langsung dengan bagian bertegangan. Harus terbuat dari karet khusus dengan rating tegangan yang sesuai.",
                 "<strong>Sepatu Safety (Safety Shoes)</strong>: Memiliki sol karet tebal tanpa bahan logam konduktif untuk memutus aliran listrik ke bumi (isolasi diri).",
@@ -121,11 +128,18 @@ export const materiData = {
             symbol: "bi-clipboard-check",
             detailId: "k3lh_sop",
             detail: {
-              content: "Prosedur keselamatan dibagi menjadi tiga tahap penting:",
+              content: "Standar Operasional Prosedur (SOP) keselamatan kerja kelistrikan dirancang berdasarkan pedoman K3 (Permenaker No. 12 Tahun 2015, PUIL, dan OSHA) untuk menjamin praktikum bebas dari bahaya sengatan, busur api, dan kebakaran. SOP dibagi menjadi tiga tahap berurutan:",
+              figure: {
+                src: "src/assets/images/k3lh/k3lh-sop-alur.svg",
+                alt: "Diagram alur 3 tahap SOP keselamatan kerja listrik: Sebelum bekerja, Saat bekerja, dan Setelah bekerja",
+                caption: "Gambar. Diagram alur SOP keselamatan kerja listrik (Isolasi energi, Praktik aman, dan Normalisasi).",
+                width: 720,
+                height: 300
+              },
               items: [
-                "<strong>Sebelum Bekerja</strong>: Pastikan sumber tegangan utama (PHB/MCB Pusat) dalam keadaan OFF dan dipasang LOTO (Lockout/Tagout). Gunakan tespen untuk memastikan tidak ada tegangan sisa. Siapkan alat kerja terisolasi standar.",
-                "<strong>Saat Bekerja</strong>: Gunakan APD lengkap. Jangan bekerja di area yang basah/lembab. Hindari menyentuh dua konduktor yang berbeda potensi secara bersamaan. Lakukan perakitan tanpa tegangan.",
-                "<strong>Setelah Bekerja</strong>: Periksa kembali kerapian sambungan. Pastikan tidak ada kabel mengambang. Bersihkan area kerja dari serpihan tembaga. Mintalah guru/instruktur memeriksa sebelum menyalakan MCB utama."
+                "<strong>Sebelum Bekerja (Persiapan & Isolasi Sumber)</strong>: Koordinasi dan minta izin kerja kepada guru/instruktur, kenakan APD lengkap standar kelistrikan, matikan tuas MCB/sakelar utama sumber, pasang gembok dan label LOTO (<em>Lockout/Tagout</em>), lalu lakukan uji tegangan nol (<em>zero energy verification</em>) dengan tespen atau multimeter yang terbukti berfungsi.",
+                "<strong>Saat Bekerja (Praktik Kerja Aman)</strong>: Selalu lakukan perakitan saat sirkuit bebas tegangan (tanpa arus), pastikan lantai dan tangan dalam keadaan kering, gunakan perkakas berisolasi standar kelistrikan, hindari menyentuh dua konduktor berpotensial berbeda secara bersamaan, dan jangan pernah bekerja sendirian di bengkel.",
+                "<strong>Setelah Bekerja (Inspeksi & Normalisasi)</strong>: Rapikan perkakas serta bersihkan serpihan kawat tembaga dan potongan kabel, periksa kekencangan sambungan terminal dan pastikan tiada kabel mengambang, laporkan kepada instruktur untuk pemeriksaan menyeluruh, lepas kunci LOTO hanya oleh personil yang memasangnya, lalu nyalakan MCB utama di bawah pengawasan instruktur."
               ],
               hasInteractiveMechanism: true
             }
@@ -133,7 +147,7 @@ export const materiData = {
           {
             name: "Bahaya-Bahaya Listrik",
             desc: "Sengatan listrik, hubung singkat, dan kebakaran akibat listrik.",
-            symbol: "bi-exclamation-triangle-fill",
+            symbol: "bi-exclamation-triangle",
             detailId: "k3lh_bahaya",
             detail: {
               content: "Energi listrik memiliki bahaya yang tidak terlihat namun mematikan:",
@@ -148,30 +162,93 @@ export const materiData = {
           {
             name: "Prosedur P3K Sengatan Listrik",
             desc: "Langkah penyelamatan jika terjadi kecelakaan sengatan listrik.",
-            symbol: "bi-heart-pulse-fill",
+            symbol: "bi-heart-pulse",
             detailId: "k3lh_p3k",
             detail: {
-              content: "Jika terjadi kecelakaan sengatan listrik, lakukan tindakan penyelamatan berikut secara tenang:",
+              content: "Pertolongan Pertama pada Kecelakaan (P3K) sengatan listrik berpedoman pada prinsip DRABC (Danger, Response, Ask for Help, Breathing, Circulation) dan prinsip 3A (Aman Diri, Aman Lingkungan, Aman Korban). Keselamatan penolong adalah prioritas tertinggi sebelum menyentuh pasien. Prosedur penyelamatan standar terdiri dari langkah-langkah berikut:",
+              figure: {
+                src: "src/assets/images/k3lh/k3lh-p3k-alur.svg",
+                alt: "Diagram alur 4 tahap P3K sengatan listrik: Putuskan arus, Panggil bantuan 112/119, Cek respon & RJP, Rawat luka & bawa ke RS",
+                caption: "Gambar. Diagram alur tanggap darurat P3K kecelakaan sengatan listrik.",
+                width: 720,
+                height: 320
+              },
               items: [
-                "<strong>Putuskan Aliran Listrik</strong>: Matikan MCB utama segera. Jika tidak memungkinkan, pisahkan korban dari konduktor menggunakan benda non-konduktor (kayu kering, plastik, kain tebal). Jangan menyentuh korban langsung dengan tangan telanjang!",
-                "<strong>Panggil Bantuan</strong>: Segera hubungi medis atau guru pendamping.",
-                "<strong>Periksa Kesadaran & Pernapasan</strong>: Jika korban tidak bernapas, lakukan RJP (Resusitasi Jantung Paru) atau CPR jika Anda terlatih.",
-                "<strong>Amankan Luka Bakar</strong>: Tutup luka bakar akibat sengatan dengan kain bersih steril, jangan gunakan minyak atau salep sembarangan."
+                "<strong>1. Putuskan Aliran Listrik (Keamanan Diri Utama)</strong>: Matikan sakelar/tuas MCB utama atau cabut steker dari stop kontak segera. JANGAN pernah menyentuh korban yang masih terhubung dengan aliran listrik. Jika sakelar tidak dapat dimatikan pada instalasi tegangan rendah (&lt; 1000 V), dorong/pisahkan korban menggunakan benda isolator kering (kayu kering, pipa PVC/plastik tebal) sambil penolong berdiri di atas alas isolator kering.",
+                "<strong>2. Panggil Bantuan Medis &amp; Guru Segera</strong>: Segera beritahu guru/instruktur di bengkel dan hubungi nomor darurat resmi Indonesia: <strong>112</strong> (Panggilan Darurat Terpadu) atau <strong>119</strong> (Layanan Gawat Darurat Medis Kemenkes). Jelaskan lokasi kejadian, kondisi korban, dan minta bantuan seseorang untuk mengambil alat AED (<em>Automated External Defibrillator</em>) jika tersedia.",
+                "<strong>3. Cek Respons &amp; Pernapasan Korban</strong>: Tepuk kedua pundak korban secara hati-hati dan panggil dengan suara tegas. Periksa apakah dada korban bergerak naik-turun (bernapas normal) dalam waktu tidak lebih dari 10 detik. Jika korban pingsan namun bernapas normal, posisikan miring mantap (<em>recovery position</em>) untuk menjaga jalan napas terbuka.",
+                "<strong>4. Lakukan Resusitasi Jantung Paru (RJP / CPR) &amp; AED</strong>: Jika korban tidak bernapas atau hanya terengah-engah (<em>gasping</em>), segera lakukan kompresi dada di tengah tulang dada sedalam <strong>5&ndash;6 cm</strong> dengan kecepatan <strong>100&ndash;120 kali per menit</strong> (biarkan dada mengembang sempurna). Terapkan rasio 30 kompresi berbanding 2 napas buatan, atau lakukan <em>Hands-Only CPR</em> (kompresi tanpa henti) bagi penolong awam. Pasang dan nyalakan AED sesegera mungkin saat alat tiba.",
+                "<strong>5. Tangani Luka Bakar Listrik</strong>: Setelah pernapasan stabil dan aman, periksa titik masuk (<em>entrance</em>) dan titik keluar (<em>exit</em>) arus listrik pada tubuh. Dinginkan luka dengan air mengalir bersih bersuhu ruang selama 10&ndash;20 menit, lalu tutup longgar dengan kain kasa steril atau kain bersih yang kering.",
+                "<strong>6. Dampingi &amp; Bawa Korban ke Fasilitas Kesehatan</strong>: Korban sengatan listrik <strong>wajib tetap dievaluasi di rumah sakit / faskes</strong> meski korban telah sadar dan merasa sehat. Arus listrik dapat memicu gangguan irama jantung tertunda (<em>delayed cardiac arrhythmia</em>), kerusakan organ dalam, atau gagal ginjal."
+              ],
+              sections: [
+                {
+                  heading: "Waspada Bahaya Kabel Tegangan Tinggi Luar Gedung / PLN",
+                  icon: "bi-exclamation-octagon-fill",
+                  paragraphs: [
+                    "Kabel tiang listrik tegangan tinggi (> 1000 V) yang terputus di jalan atau area terbuka memiliki potensi loncatan bunga api listrik (<em>arcing</em>) dan tegangan langkah (<em>step potential</em>) yang merambat melalui tanah berair. Penolong awam DILARANG MENDEKAT.",
+                    "Jangan mencoba memindahkan kabel tiang listrik PLN dengan kayu, bambu, atau galah karena bahan tersebut tetap dapat menghantarkan listrik pada tegangan ribuan volt. Jauhi lokasi minimal dalam radius aman, peringatkan warga sekitar, dan segera hubungi Contact Center PLN di <strong>123</strong> serta layanan darurat <strong>112</strong>."
+                  ]
+                },
+                {
+                  heading: "Hal-Hal yang TIDAK Boleh Dilakukan (Larangan Keras)",
+                  icon: "bi-slash-circle-fill",
+                  items: [
+                    "<strong>DILARANG menyentuh korban dengan tangan telanjang</strong> saat tubuh korban masih kontak dengan konduktor atau sumber listrik.",
+                    "<strong>DILARANG mengoleskan odol (pasta gigi), minyak goreng, kecap, mentega, atau salep sembarangan</strong> pada luka bakar karena memerangkap panas dan memicu infeksi jaringan.",
+                    "<strong>DILARANG memberikan makanan atau minuman</strong> (termasuk air putih atau teh) kepada korban yang baru pingsan/syok karena berisiko tersedak dan menyumbat jalan napas (aspirasi paru).",
+                    "<strong>DILARANG memecahkan gelembung kulit (blister)</strong> atau menarik paksa pakaian yang melekat pada luka bakar.",
+                    "<strong>DILARANG memindahkan korban sembarangan</strong> kecuali terdapat ancaman langsung yang mengancam nyawa (seperti ledakan atau kobaran api)."
+                  ],
+                  callout: {
+                    title: "Catatan Edukasi K3",
+                    text: "Materi dan simulasi ini bersifat pengenalan dasar keselamatan kerja dan bukan merupakan pengganti pelatihan resmi atau sertifikasi kompetensi P3K / RJP dari lembaga resmi berwenang seperti Palang Merah Indonesia (PMI) atau Kementerian Kesehatan RI."
+                  }
+                }
               ],
               hasInteractiveMechanism: true
             }
           },
           {
             name: "Rambu Keselamatan Kelistrikan",
-            desc: "3 jenis rambu K3: Peringatan (kuning), Larangan (merah), Wajib (biru).",
+            desc: "Standar rambu K3: Peringatan (kuning), Larangan (merah), Wajib (biru), dan Kondisi Aman (hijau).",
             symbol: "bi-cone-striped",
             detailId: "k3lh_rambu",
             detail: {
-              content: "Rambu K3 dikategorikan menjadi 3 jenis:",
+              content: "Rambu keselamatan dan kesehatan kerja (K3) kelistrikan berpedoman pada standar ISO 7010 dan SNI untuk menyampaikan pesan bahaya secara visual dan universal. Standar rambu dibedakan berdasarkan kombinasi bentuk geometris dan warna keselamatan:",
+              figure: {
+                src: "src/assets/images/k3lh/k3lh-rambu-kategori.svg",
+                alt: "Empat kategori rambu keselamatan listrik: Peringatan (kuning segitiga), Larangan (merah lingkaran bergaris diagonal), Kewajiban (biru lingkaran), dan Kondisi Aman (hijau persegi)",
+                caption: "Gambar. Standar bentuk dan warna rambu K3LH kelistrikan (ISO 7010 & SNI).",
+                width: 720,
+                height: 300
+              },
               items: [
-                "<strong>Rambu Peringatan (Kuning, Segitiga)</strong>: Contoh: Gambar petir (Awas Tegangan Tinggi), memperingatkan bahaya sengatan listrik.",
-                "<strong>Rambu Larangan (Merah, Lingkaran dengan Garis Diagonal)</strong>: Contoh: Dilarang Menyalakan Sakelar (sedang ada perbaikan).",
-                "<strong>Rambu Wajib / Perintah (Biru, Lingkaran)</strong>: Contoh: Gunakan Sarung Tangan Isolasi, menunjukkan APD wajib dipakai."
+                "<strong>Rambu Peringatan (Warning) &mdash; Segitiga Kuning</strong>: Memperingatkan adanya potensi bahaya sengatan atau busur api listrik. Latar kuning bertepi hitam dengan piktogram hitam. <em>Contoh</em>: Gambar kilat petir (Awas Bahaya Tegangan Listrik), Awas Bahaya Panel Listrik Terbuka.",
+                "<strong>Rambu Larangan (Prohibition) &mdash; Lingkaran Merah Bergaris Diagonal</strong>: Melarang tindakan berbahaya yang berisiko memicu kecelakaan fatal. Latar putih dengan tepi dan garis diagonal merah memotong piktogram hitam. <em>Contoh</em>: Dilarang Menyalakan Sakelar (<em>Do Not Operate</em> saat perbaikan), Dilarang Menyentuh.",
+                "<strong>Rambu Kewajiban / Perintah (Mandatory) &mdash; Lingkaran Biru</strong>: Mengharuskan pemakaian APD atau tindakan perlindungan sebelum bekerja dengan sirkuit. Latar biru pekat dengan piktogram putih. <em>Contoh</em>: Wajib Memakai Sarung Tangan Isolasi, Wajib Memakai Sepatu Safety Berisolasi, Wajib Memakai Helm Pelindung.",
+                "<strong>Rambu Kondisi Aman &amp; Darurat (Safe Condition) &mdash; Persegi Hijau</strong>: Menunjukkan sarana penyelamatan, arah jalan keluar, atau perlengkapan medis saat terjadi insiden kelistrikan. Latar hijau dengan piktogram putih. <em>Contoh</em>: Jalur Evakuasi Darurat (<em>Emergency Exit</em>), Kotak P3K, Titik Kumpul Darurat."
+              ],
+              sections: [
+                {
+                  heading: "Tips Cepat Membaca Rambu K3 di Bengkel Listrik",
+                  icon: "bi-lightbulb-fill",
+                  paragraphs: [
+                    "Untuk mengenali rambu keselamatan secara instan, gunakan rumus dua langkah sederhana: <strong>1) Perhatikan bentuk dan warna dasarnya</strong> untuk mengetahui sifat pesan (Kuning = Waspada Bahaya, Merah = Dilarang Keras, Biru = Kewajiban/Perintah, Hijau = Kondisi Aman/Penyelamatan).",
+                    "<strong>2) Perhatikan simbol/piktogram di bagian tengahnya</strong> untuk mengetahui tindakan atau instruksi kelistrikan spesifik yang dimaksud."
+                  ]
+                },
+                {
+                  heading: "Rambu Peralatan Pemadam Kebakaran Listrik (Fire Safety)",
+                  icon: "bi-fire",
+                  paragraphs: [
+                    "Standar ISO 7010 juga menetapkan kategori <strong>Peralatan Pemadam Api (Persegi Merah dengan piktogram putih)</strong>, seperti penunjuk posisi APAR (Alat Pemadam Api Ringan). Pada kebakaran instalasi listrik, gunakan APAR jenis CO₂ (Karbon Dioksida) atau Serbuk Kimia Kering (Dry Chemical Powder), dan DILARANG MENYIRAM api listrik menggunakan air atau busa (foam konduktif)."
+                  ],
+                  callout: {
+                    title: "Disiplin Keselamatan",
+                    text: "Kepatuhan terhadap rambu K3LH bukan sekadar formalitas, melainkan lapisan perlindungan visual pertama dalam mencegah kecelakaan kerja sengatan dan korsleting di bengkel praktikum TITL."
+                  }
+                }
               ],
               hasInteractiveMechanism: true
             }
@@ -294,7 +371,7 @@ export const materiData = {
             name: "Pipa PVC / Conduit",
             desc: "Pipa pelindung jalur kabel dari kerusakan fisik, kelembaban, dan gangguan luar. Wajib digunakan pada instalasi tertanam (in-bow) sesuai standar PUIL.",
             symbol: "bi-grip-vertical",
-            imagePath: resolveAssetUrl("src/assets/images/tools/pipa-conduit.png"),
+            imagePath: resolveAssetUrl("src/assets/images/tools/pipa-conduit.webp"),
             detailId: "bahan_pipa_pvc",
             detail: {
               content: "Tersedia dalam beberapa ukuran diameter standar (5/8 inci, 3/4 inci, 1 inci) disesuaikan dengan jumlah dan ukuran kabel yang akan dilindungi di dalamnya. Bisa dipasang tertanam di dalam tembok (in-bow) atau di permukaan tembok (out-bow) tergantung desain instalasi."
@@ -304,7 +381,7 @@ export const materiData = {
             name: "Gergaji Pipa (Hacksaw)",
             desc: "Digunakan untuk memotong pipa PVC/conduit sesuai ukuran yang dibutuhkan sebelum dipasang sebagai pelindung jalur kabel.",
             symbol: "bi-scissors",
-            imagePath: resolveAssetUrl("src/assets/images/tools/gergaji-pipa.png"),
+            imagePath: resolveAssetUrl("src/assets/images/tools/gergaji-pipa.webp"),
             detailId: "bahan_gergaji_pipa",
             detail: {
               content: "Memiliki mata gergaji dengan jumlah gigi per inci (TPI) yang sesuai untuk memotong material PVC dengan hasil potongan rapi. Teknik memotong yang benar: tegak lurus terhadap sumbu pipa agar sambungan pipa nantinya rapat dan rapi."
@@ -557,7 +634,7 @@ export const materiData = {
           {
             name: "Fitting Lampu",
             desc: "Dudukan lampu yang memegang lampu dan menyalurkan listrik dari kabel instalasi ke lampu. Terdiri dari kontak lidah di tengah (Fasa) dan ulir logam di luar (Netral).",
-            imagePath: resolveAssetUrl("src/assets/images/fitting-lampu.png"),
+            imagePath: resolveAssetUrl("src/assets/images/fitting-lampu.webp"),
             symbol: "bi-lightbulb",
             presetKey: "Lamp",
             detailId: "komp_fitting",

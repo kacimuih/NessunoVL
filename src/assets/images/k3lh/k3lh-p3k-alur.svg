@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" width="100%" height="100%" role="img" aria-labelledby="t-p3k d-p3k" font-family="Arial, Helvetica, sans-serif">
+  <title id="t-p3k">Alur Prosedur P3K Sengatan Listrik</title>
+  <desc id="d-p3k">Empat langkah utama pertolongan pertama pada korban sengatan listrik: 1. Putuskan arus listrik, 2. Panggil bantuan darurat, 3. Cek respon dan RJP bila perlu, 4. Tangani luka bakar dan rujuk ke fasilitas kesehatan.</desc>
+
+  <!-- Latar Belakang -->
+  <rect width="720" height="320" rx="16" fill="#1e293b"/>
+
+  <!-- Judul & Subjudul -->
+  <text x="360" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#f8fafc">Alur Prosedur P3K Sengatan Listrik</text>
+  <text x="360" y="47" text-anchor="middle" font-size="11" fill="#94a3b8">Pedoman Tanggap Darurat: Keamanan Penolong &bull; Bantuan Medis (112/119) &bull; RJP/AED &bull; Perawatan Lanjut</text>
+
+  <!-- ==================== KARTU 1: PUTUSKAN ARUS ==================== -->
+  <g id="card-1">
+    <rect x="22" y="62" width="154" height="238" rx="10" fill="#0f172a" stroke="#ef4444" stroke-width="1.8"/>
+    <!-- Badge -->
+    <rect x="30" y="70" width="138" height="22" rx="5" fill="rgba(239,68,68,0.18)" stroke="#ef4444" stroke-width="1"/>
+    <text x="99" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#f87171" letter-spacing="0.4">1. PUTUSKAN ARUS</text>
+
+    <!-- Ilustrasi: MCB OFF & Kilat Terputus -->
+    <g transform="translate(99, 120)">
+      <!-- Kotak MCB -->
+      <rect x="-16" y="-18" width="32" height="36" rx="4" fill="#1e293b" stroke="#ef4444" stroke-width="1.2"/>
+      <!-- Tuas MCB Posisi Turun (OFF) -->
+      <rect x="-6" y="2" width="12" height="12" rx="2" fill="#ef4444"/>
+      <line x1="-3" y1="8" x2="3" y2="8" stroke="#ffffff" stroke-width="1.5"/>
+      <!-- Kilat Tanda Bahaya dengan Silang Putus -->
+      <path d="M-5 -12 L1 -5 H-3 L3 2" fill="none" stroke="#fca5a5" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="-10" y1="-8" x2="8" y2="10" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- Butir Keterangan -->
+    <text x="30" y="162" font-size="10.5" fill="#f1f5f9">&bull; Matikan tuas MCB</text>
+    <text x="30" y="179" font-size="10.5" fill="#f1f5f9">&bull; Cabut steker kabel</text>
+    <text x="30" y="196" font-size="10.5" fill="#f87171" font-weight="700">&bull; JANGAN sentuh korban!</text>
+    <text x="30" y="213" font-size="10.5" fill="#cbd5e1">&bull; Pakai isolator kayu kering</text>
+    <text x="30" y="230" font-size="10" fill="#94a3b8">  (jika MCB tak terjangkau)</text>
+
+    <!-- Footer Tag -->
+    <rect x="30" y="266" width="138" height="22" rx="5" fill="rgba(239,68,68,0.12)"/>
+    <text x="99" y="281" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fca5a5">Aman Diri Mutlak</text>
+  </g>
+
+  <!-- Panah 1 -> 2 -->
+  <path d="M181 176 H193 M188 171 L193 176 L188 181" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ==================== KARTU 2: PANGGIL BANTUAN ==================== -->
+  <g id="card-2">
+    <rect x="198" y="62" width="154" height="238" rx="10" fill="#0f172a" stroke="#3b82f6" stroke-width="1.8"/>
+    <!-- Badge -->
+    <rect x="206" y="70" width="138" height="22" rx="5" fill="rgba(59,130,246,0.18)" stroke="#3b82f6" stroke-width="1"/>
+    <text x="275" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#60a5fa" letter-spacing="0.4">2. PANGGIL BANTUAN</text>
+
+    <!-- Ilustrasi: Telepon Darurat & Sirene -->
+    <g transform="translate(275, 120)">
+      <!-- Badan Gagang Telepon -->
+      <path d="M-10 -12 C-14 -12 -16 -8 -12 -4 L-7 1 C-5 3 -2 3 0 1 L3 -2 C5 -4 5 -7 3 -9 Z" fill="#3b82f6"/>
+      <path d="M-8 -6 C-3 -3 1 1 4 6" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Gelombang Panggilan / Sirene -->
+      <path d="M8 -10 A12 12 0 0 1 14 0" fill="none" stroke="#93c5fd" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M11 -15 A18 18 0 0 1 20 -1" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round"/>
+      <!-- Kotak Nomor 112/119 -->
+      <rect x="-18" y="8" width="36" height="14" rx="3" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+      <text x="0" y="19" text-anchor="middle" font-size="8.5" font-weight="700" fill="#93c5fd">112 / 119</text>
+    </g>
+
+    <!-- Butir Keterangan -->
+    <text x="206" y="162" font-size="10.5" fill="#f1f5f9">&bull; Lapor ke guru/lab</text>
+    <text x="206" y="179" font-size="10.5" fill="#60a5fa" font-weight="700">&bull; Telepon Darurat 112</text>
+    <text x="206" y="196" font-size="10.5" fill="#60a5fa" font-weight="700">&bull; Medis Kemenkes 119</text>
+    <text x="206" y="213" font-size="10.5" fill="#cbd5e1">&bull; Minta bawakan AED</text>
+    <text x="206" y="230" font-size="10" fill="#94a3b8">  (defibrillator otomatis)</text>
+
+    <!-- Footer Tag -->
+    <rect x="206" y="266" width="138" height="22" rx="5" fill="rgba(59,130,246,0.12)"/>
+    <text x="275" y="281" text-anchor="middle" font-size="9.5" font-weight="700" fill="#93c5fd">Respon Darurat Cepat</text>
+  </g>
+
+  <!-- Panah 2 -> 3 -->
+  <path d="M357 176 H369 M364 171 L369 176 L364 181" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ==================== KARTU 3: CEK & RJP/AED ==================== -->
+  <g id="card-3">
+    <rect x="374" y="62" width="154" height="238" rx="10" fill="#0f172a" stroke="#f59e0b" stroke-width="1.8"/>
+    <!-- Badge -->
+    <rect x="382" y="70" width="138" height="22" rx="5" fill="rgba(245,158,11,0.18)" stroke="#f59e0b" stroke-width="1"/>
+    <text x="451" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#fbbf24" letter-spacing="0.4">3. CEK &amp; RJP / AED</text>
+
+    <!-- Ilustrasi: Jantung, Garis EKG, & AED Pad -->
+    <g transform="translate(451, 120)">
+      <!-- Bentuk Hati/Jantung -->
+      <path d="M0 12 C-14 2 -16 -10 -8 -14 C-3 -16 0 -10 0 -8 C0 -10 3 -16 8 -14 C16 -10 14 2 0 12 Z" fill="rgba(245,158,11,0.3)" stroke="#f59e0b" stroke-width="1.4"/>
+      <!-- Garis EKG Pulsa Listrik Jantung -->
+      <path d="M-12 0 H-6 L-3 -8 L0 6 L3 -4 L6 2 H12" fill="none" stroke="#fde047" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Butir Keterangan -->
+    <text x="382" y="162" font-size="10.5" fill="#f1f5f9">&bull; Cek respon &amp; napas</text>
+    <text x="382" y="179" font-size="10.5" fill="#f1f5f9">&bull; Jika tidak bernapas:</text>
+    <text x="382" y="196" font-size="10.5" fill="#fbbf24" font-weight="700">&bull; RJP 100–120x/menit</text>
+    <text x="382" y="213" font-size="10.5" fill="#cbd5e1">&bull; Tekan dada 5–6 cm</text>
+    <text x="382" y="230" font-size="10" fill="#94a3b8">&bull; Pasang AED bila ada</text>
+
+    <!-- Footer Tag -->
+    <rect x="382" y="266" width="138" height="22" rx="5" fill="rgba(245,158,11,0.12)"/>
+    <text x="451" y="281" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fde68a">Bantuan Hidup Dasar</text>
+  </g>
+
+  <!-- Panah 3 -> 4 -->
+  <path d="M533 176 H545 M540 171 L545 176 L540 181" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ==================== KARTU 4: RAWAT & RUJUK ==================== -->
+  <g id="card-4">
+    <rect x="550" y="62" width="150" height="238" rx="10" fill="#0f172a" stroke="#10b981" stroke-width="1.8"/>
+    <!-- Badge -->
+    <rect x="556" y="70" width="138" height="22" rx="5" fill="rgba(16,185,129,0.18)" stroke="#10b981" stroke-width="1"/>
+    <text x="625" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#34d399" letter-spacing="0.4">4. RAWAT &amp; RUJUK</text>
+
+    <!-- Ilustrasi: Kasa Pembalut Steril & Palang Medis -->
+    <g transform="translate(625, 120)">
+      <!-- Perban / Kain Kasa -->
+      <rect x="-14" y="-14" width="28" height="28" rx="5" fill="#1e293b" stroke="#10b981" stroke-width="1.4"/>
+      <!-- Palang Hijau / Putih Medis -->
+      <rect x="-3" y="-10" width="6" height="20" rx="1.5" fill="#10b981"/>
+      <rect x="-10" y="-3" width="20" height="6" rx="1.5" fill="#10b981"/>
+    </g>
+
+    <!-- Butir Keterangan -->
+    <text x="558" y="162" font-size="10.5" fill="#f1f5f9">&bull; Dinginkan air bersih</text>
+    <text x="558" y="179" font-size="10.5" fill="#f1f5f9">&bull; Tutup kasa steril</text>
+    <text x="558" y="196" font-size="10.5" fill="#f87171">&bull; JANGAN odol/minyak!</text>
+    <text x="558" y="213" font-size="10.5" fill="#34d399" font-weight="700">&bull; Tetap bawa ke RS</text>
+    <text x="558" y="230" font-size="10" fill="#94a3b8">  (cegah aritmia tertunda)</text>
+
+    <!-- Footer Tag -->
+    <rect x="556" y="266" width="138" height="22" rx="5" fill="rgba(16,185,129,0.12)"/>
+    <text x="625" y="281" text-anchor="middle" font-size="9.5" font-weight="700" fill="#a7f3d0">Pemeriksaan Lanjut</text>
+  </g>
+</svg>

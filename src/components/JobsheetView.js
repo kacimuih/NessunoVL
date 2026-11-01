@@ -8,6 +8,7 @@ import { playBeep, playSuccess, playError, playWarning, playShortCircuit, playUI
 import { showConfirmDialog } from '../utils/appDialog.js';
 import { renderLabCanvas, getAvailablePaletteItems, applyViewportTransform, fitToView } from './LabCanvas.js';
 import { getPaletteThumbnail } from '../data/realisticAssets.js';
+import { renderWorkingDrawing, renderWorkingDrawingLegend, initWorkingDrawingEvents } from './WorkingDrawing.js';
 
 
 // Session memory for active tab per jobsheet
@@ -158,6 +159,26 @@ export function renderJobsheetView() {
               ${js.toolsAndMaterials.map(m => `<li>${m}</li>`).join('')}
             </ul>
           </div>
+
+          <!-- Gambar Kerja (Diagram Pengawatan) -->
+          ${js.workingDrawing ? `
+            <figure class="wd-card" role="img" aria-label="Gambar Kerja ${js.title}">
+              <div class="wd-header">
+                <figcaption class="wd-title">
+                  <i class="bi bi-diagram-3-fill"></i> Gambar Kerja ${js.id.toUpperCase()}: ${js.title.replace(/^Jobsheet \d+:\s*/, '')}
+                </figcaption>
+                <button type="button" class="wd-btn-zoom" data-action="wd-zoom" data-js-id="${js.id}" title="Perbesar Gambar Kerja" aria-label="Perbesar Gambar Kerja">
+                  <i class="bi bi-arrows-fullscreen"></i> Perbesar
+                </button>
+              </div>
+              <div class="wd-svg-container">
+                ${renderWorkingDrawing(js.workingDrawing, { title: js.title })}
+              </div>
+              <div class="wd-legend">
+                ${renderWorkingDrawingLegend(js.workingDrawing)}
+              </div>
+            </figure>
+          ` : ''}
 
           <div style="flex: 1;">
             <h4 style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 4px;">Langkah Kerja:</h4>
@@ -351,6 +372,9 @@ export function renderJobsheetView() {
     if (btnStartBuild) {
       btnStartBuild.addEventListener('click', () => switchToTab('canvas'));
     }
+
+    // Inisialisasi event tombol perbesar gambar kerja
+    initWorkingDrawingEvents(container, jobsheetData);
   }
 
   // Toggle Instruction Panel Listener
